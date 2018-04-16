@@ -14,7 +14,7 @@ import csv
 import time
 
 Demand=[]
-with open("C:/Users/u0110734/Documents/Data model Q-learning/Demand.csv") as csvfile:
+with open("./Demand.csv") as csvfile:
     reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
     for row in reader:
         Demand.append(int(row[0]))
