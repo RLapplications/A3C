@@ -32,7 +32,7 @@ entropy_factor = 0.0001
 p_len_episode_buffer = 50
 max_episode_length = 1000
 gamma = .99 # discount rate for advantage estimation and reward discounting
-
+nb_workers = 4
 OrderFast=5
 OrderSlow=10
 InvMax=20
@@ -225,7 +225,7 @@ class Worker():
             feed_dict=feed_dict)
         return v_l / len(rollout), p_l / len(rollout), e_l / len(rollout), g_n, v_n
 
-    def work(self, max_episode_length, gamma, sess, coord, saver):
+    def work(self, max_episode_length, gamma, sess, coord, saver,saver_best):
         best_solution = -99999999999
         episode_count = sess.run(self.global_episodes)
         total_steps = 0
@@ -308,7 +308,7 @@ class Worker():
                         f= open(self.best_path + '/Train_'+str(self.number)+"/best_solution.txt","w")
                         f.write(str(best_solution) + ' ' + str (episode_step_count))
                         f.close()
-                        saver.save(sess, self.best_path + '/Train_'+str(self.number) +'/model_' +' ' + str(episode_count) + '.cptk')
+                        saver_best.save(sess, self.best_path + '/Train_'+str(self.number) +'/model_' +' ' + str(episode_count) + '.cptk')
 
 
                 self.episode_rewards.append(episode_reward)
@@ -376,6 +376,7 @@ def write_parameters():
     f.write("\nPenalty " + str(Penalty))
     f.write("\ninitial_state " + str(initial_state))
     f.write("\nmax_training_episodes " + str(max_training_episodes))
+    f.write("\nnb_workers"+str(nb_workers))
     f.close()
     return
 
@@ -404,7 +405,7 @@ with tf.device("/cpu:0"):
     global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
     trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
     master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
-    num_workers = multiprocessing.cpu_count()  # Set workers to number of available CPU threads
+    num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
     workers = []
 
 
@@ -416,6 +417,7 @@ with tf.device("/cpu:0"):
             os.makedirs(best_path + '/train_' + str(i))
         workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
     saver = tf.train.Saver(max_to_keep=5)
+    saver_best = tf.train.Saver(max_to_keep=None)
 
 with tf.Session() as sess:
     coord = tf.train.Coordinator()
@@ -432,7 +434,7 @@ with tf.Session() as sess:
 
     worker_threads = []
     for worker in workers:
-        worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver)
+        worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver,saver_best)
         t = threading.Thread(target=(worker_work))
         t.start()
         sleep(0.5)
