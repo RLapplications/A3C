@@ -22,7 +22,7 @@ with open("./Demand.csv") as csvfile:
 #HYPERPARAMETERS
 depth_nn_hidden = 1
 depth_nn_layers_hidden = [70, 40 , 10 , 20]
-depth_nn_out = 4
+depth_nn_out = 40
 activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
 activation_nn_out=tf.nn.relu
 learning_rate = 0.0001
@@ -35,7 +35,7 @@ gamma = .99 # discount rate for advantage estimation and reward discounting
 nb_workers = 4
 OrderFast=5
 OrderSlow=10
-InvMax=20
+InvMax=30
 InvMin=-10
 Penalty = -1
 
