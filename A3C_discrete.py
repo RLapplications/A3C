@@ -47,6 +47,8 @@ b=-38
 p=-0
 C_f=-10
 C_s=-0
+cap_fast = 2
+cap_slow = 2
 
 initial_state = [3,3,2,3,2,3,2,3,2,3,2,3,2,3,2]
 max_training_episodes = 1000000
@@ -178,8 +180,8 @@ class Worker():
 
     def Reward(self, s1, Action):
         reward = 0
-        reward += Action[1] * C_s
-        reward += Action[0]* C_f
+        reward += int(Action[1]/cap_slow) * C_s
+        reward += int(Action[0]/cap_fast)* C_f
         if (s1[0] >= 0):
             reward += s1[0] * h
         else:
@@ -302,7 +304,7 @@ class Worker():
                     if episode_step_count >= max_episode_length - 1:
                         break
                 if self.bool_evaluating == True:
-                    print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
+                    #print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
                     if(episode_reward / episode_step_count > best_solution and episode_step_count==max_episode_length-1):
                         best_solution = episode_reward / episode_step_count
                         f= open(self.best_path + '/Train_'+str(self.number)+"/best_solution.txt","w")
@@ -377,13 +379,13 @@ def write_parameters():
     f.write("\ninitial_state " + str(initial_state))
     f.write("\nmax_training_episodes " + str(max_training_episodes))
     f.write("\nnb_workers"+str(nb_workers))
+    f.write("\ncap_fast"+str(cap_fast))
+    f.write("\ncap_slow"+str(cap_slow))
     f.close()
     return
 
 actions=CreateActions(OrderFast,OrderSlow)#np.array([[0,0],[0,5],[5,0],[5,5]])
 a_size = len(actions) # Agent can move Left, Right, or Fire
-
-
 
 
 
@@ -394,11 +396,6 @@ tf.reset_default_graph()
 
 if not os.path.exists(model_path):
     os.makedirs(model_path)
-
-# Create a directory to save episode playback gifs to
-if not os.path.exists('./frames'):
-    os.makedirs('./frames')
-
 
 
 with tf.device("/cpu:0"):
