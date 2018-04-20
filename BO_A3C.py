@@ -32,8 +32,8 @@ depth_nn_out = 40
 entropy_factor = 0.0001
 p_len_episode_buffer = 50
 gamma = .99
-InvMax=30
-learning_rate = 0.0001
+InvMax=25
+learning_rate = 0.00001
 
 activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
 activation_nn_out=tf.nn.relu
@@ -62,7 +62,7 @@ cap_fast = 1
 cap_slow = 1
 
 initial_state = [3,3,2,3,2,3,2,3,2,3,2,3,2,3,2]
-max_training_episodes = 30
+max_training_episodes = 8000
 
 
 
@@ -406,17 +406,14 @@ a_size = len(actions) # Agent can move Left, Right, or Fire
 s_size = LT_s+1
 
 def obj_function(dec_vect):
-  depth_nn_hidden = [dec_vect[0][0],0,0,0]
-   depth_nn_out = dec_vect[0][1]
-   entropy_factor = dec_vect[0][2]
-   p_len_episode_buffer = dec_vect[0][3]
-   gamma = dec_vect[0][4]
-   InvMax = dec_vect[0][5]
-   learning_rate=dec_vect[0][6]
 
-
-
-
+    #depth_nn_hidden = [dec_vect[0][0],0,0,0]
+    #depth_nn_out = dec_vect[0][1]
+    entropy_factor = dec_vect[0][0]
+    #p_len_episode_buffer = dec_vect[0][3]
+    #gamma = dec_vect[0][4]
+    #InvMax = dec_vect[0][5]
+    #learning_rate=dec_vect[0][6]
 
     tf.reset_default_graph()
 
@@ -479,13 +476,13 @@ import GPyOpt
 from GPyOpt.methods import BayesianOptimization
 #import numpy as np
 
-bounds = [{'name': 'x0', 'type': 'discrete', 'domain': (40,70)},\
-         {'name': 'x1', 'discrete': 'discrete', 'domain': (20,40)},\
-          {'name': 'x2', 'type': 'continuous', 'domain': (0.0001,0.0000001)},\
-          {'name': 'x3', 'type': 'discrete', 'domain': (20,50)},\
-          {'name': 'x4', 'type': 'continuous', 'domain': (0.95,0.999)},\
-           {'name': 'x5', 'type': 'discrete', 'domain': (20,30)},\
-          {'name': 'x6', 'type': 'continuous', 'domain': (0.01,0.00001)},]
+bounds = [#{'name': 'x0', 'type': 'discrete', 'domain': (40,70)},\
+         #{'name': 'x1', 'discrete': 'discrete', 'domain': (20,40)},\
+          {'name': 'x2', 'type': 'continuous', 'domain': (0.001,0.0000001)}]#,\
+          #{'name': 'x3', 'type': 'discrete', 'domain': (20,50)},\
+          #{'name': 'x4', 'type': 'continuous', 'domain': (0.95,0.999)},\
+           #{'name': 'x5', 'type': 'discrete', 'domain': (20,30)},\
+          #{'name': 'x6', 'type': 'continuous', 'domain': (0.01,0.00001)},]
 
 
 
@@ -496,12 +493,12 @@ bounds = [{'name': 'x0', 'type': 'discrete', 'domain': (40,70)},\
 test = BayesianOptimization(f=obj_function,domain=bounds)#bounds)
 #myBopt = BayesianOptimization(f=f, domain=domain)
 
-test.run_optimization(max_iter=4,verbosity=True,report_file='./report.txt')
+test.run_optimization(max_iter=20,verbosity=True,report_file='./report.txt')
 test.save_evaluations('./evaluations.txt')
 test.plot_acquisition()
 test.plot_convergence()
 
-test.plot_acquisition(filename='./test.png')
+#test.plot_acquisition(filename='./test.png')
 test.plot_convergence(filename='./test2.png')
 #myBopt.run_optimization(max_iter=5)
 #myBopt.plot_acquisition()

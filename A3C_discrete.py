@@ -10,7 +10,6 @@ from copy import deepcopy
 import os
 import itertools
 import csv
-
 import time
 
 Demand=[]
@@ -20,22 +19,34 @@ with open("./Demand.csv") as csvfile:
         Demand.append(int(row[0]))
 
 #HYPERPARAMETERS
+
+#dec_vect = np.zeros(7)
+
+
+
+
+
 depth_nn_hidden = 1
 depth_nn_layers_hidden = [70, 40 , 10 , 20]
 depth_nn_out = 40
-activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
-activation_nn_out=tf.nn.relu
-learning_rate = 0.0001
-optimizer = tf.train.AdamOptimizer(learning_rate)
-activations = [tf.nn.relu,tf.nn.relu]
 entropy_factor = 0.0001
 p_len_episode_buffer = 50
+gamma = .99
+InvMax=30
+learning_rate = 0.0001
+
+activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
+activation_nn_out=tf.nn.relu
+
+optimizer = tf.train.AdamOptimizer(learning_rate)
+activations = [tf.nn.relu,tf.nn.relu]
+
+
 max_episode_length = 1000
-gamma = .99 # discount rate for advantage estimation and reward discounting
+ # discount rate for advantage estimation and reward discounting
 nb_workers = 4
 OrderFast=5
 OrderSlow=10
-InvMax=30
 InvMin=-10
 Penalty = -1
 
@@ -47,15 +58,13 @@ b=-38
 p=-0
 C_f=-10
 C_s=-0
-cap_fast = 2
-cap_slow = 2
+cap_fast = 1
+cap_slow = 1
 
 initial_state = [3,3,2,3,2,3,2,3,2,3,2,3,2,3,2]
-max_training_episodes = 1000000
+max_training_episodes = 30
 
-load_model = False
-model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
-best_path= 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) +'/best'
+
 
 
 # Copies one set of variables to another.
@@ -168,6 +177,7 @@ class Worker():
         self.actions = self.actions = np.identity(a_size, dtype=bool).tolist()
         self.bool_evaluating = None
         self.inv_vect = [3 for i in range(LT_s + 1)]
+        self.best_solution = -9999999999999
 
     def Transition(self, Demand, Action):
         self.inv_vect[0] -= Demand
@@ -228,7 +238,7 @@ class Worker():
         return v_l / len(rollout), p_l / len(rollout), e_l / len(rollout), g_n, v_n
 
     def work(self, max_episode_length, gamma, sess, coord, saver,saver_best):
-        best_solution = -99999999999
+        #best_solution = -99999999999
         episode_count = sess.run(self.global_episodes)
         total_steps = 0
         print("Starting worker " + str(self.number))
@@ -305,10 +315,10 @@ class Worker():
                         break
                 if self.bool_evaluating == True:
                     #print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
-                    if(episode_reward / episode_step_count > best_solution and episode_step_count==max_episode_length-1):
-                        best_solution = episode_reward / episode_step_count
+                    if(episode_reward / episode_step_count > self.best_solution and episode_step_count==max_episode_length-1):
+                        self.best_solution = episode_reward / episode_step_count
                         f= open(self.best_path + '/Train_'+str(self.number)+"/best_solution.txt","w")
-                        f.write(str(best_solution) + ' ' + str (episode_step_count))
+                        f.write(str(self.best_solution) + ' ' + str (episode_step_count))
                         f.close()
                         saver_best.save(sess, self.best_path + '/Train_'+str(self.number) +'/model_' +' ' + str(episode_count) + '.cptk')
 
@@ -351,7 +361,10 @@ class Worker():
                     sess.run(self.increment)
                 episode_count += 1
 
-def write_parameters():
+
+
+
+def write_parameters(model_path,depth_nn_hidden,depth_nn_layers_hidden,depth_nn_out,entropy_factor,activation_nn_hidden,activation_nn_out,learning_rate,optimizer,activations,p_len_episode_buffer,max_episode_length,OrderFast,OrderSlow,LT_s,LT_f,InvMax,max_training_episodes):
     f = open(model_path + "/Parameters.txt","w")
     f.write("depth_nn_hidden: " + str(depth_nn_hidden))
     f.write("\ndepth_nn_layers_hidden "+str(depth_nn_layers_hidden))
@@ -384,6 +397,7 @@ def write_parameters():
     f.close()
     return
 
+
 actions=CreateActions(OrderFast,OrderSlow)#np.array([[0,0],[0,5],[5,0],[5,5]])
 a_size = len(actions) # Agent can move Left, Right, or Fire
 
@@ -391,49 +405,107 @@ a_size = len(actions) # Agent can move Left, Right, or Fire
 
 s_size = LT_s+1
 
-
-tf.reset_default_graph()
-
-if not os.path.exists(model_path):
-    os.makedirs(model_path)
-
-
-with tf.device("/cpu:0"):
-    global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
-    trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
-    master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
-    num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
-    workers = []
+def obj_function(dec_vect):
+ #  depth_nn_hidden = [dec_vect[0][0],0,0,0]
+ #  depth_nn_out = dec_vect[0][1]
+ #  entropy_factor = dec_vect[0][2]
+ #  p_len_episode_buffer = dec_vect[0][3]
+ #  gamma = dec_vect[0][4]
+ #  InvMax = dec_vect[0][5]
+# #  learning_rate=dec_vect[0][6]
 
 
-    write_parameters()
-
-    # Create worker classes
-    for i in range(num_workers):
-        if not os.path.exists(best_path + '/train_' + str(i)):
-            os.makedirs(best_path + '/train_' + str(i))
-        workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
-    saver = tf.train.Saver(max_to_keep=5)
-    saver_best = tf.train.Saver(max_to_keep=None)
-
-with tf.Session() as sess:
-    coord = tf.train.Coordinator()
-    if load_model == True:
-        print('Loading Model...')
-        ckpt = tf.train.get_checkpoint_state(model_path)
-        saver.restore(sess, ckpt.model_checkpoint_path)
-    else:
-        sess.run(tf.global_variables_initializer())
-
-    # This is where the asynchronous magic happens.
-    # Start the "work" process for each worker in a separate threat.
+    entropy_factor = dec_vect[0][0]
+    gamma = dec_vect[0][1]
+    learning_rate=dec_vect[0][2]
 
 
-    worker_threads = []
-    for worker in workers:
-        worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver,saver_best)
-        t = threading.Thread(target=(worker_work))
-        t.start()
-        sleep(0.5)
-        worker_threads.append(t)
-    coord.join(worker_threads)
+
+
+    tf.reset_default_graph()
+
+    load_model = False
+    model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
+    best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
+
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+
+
+    with tf.device("/cpu:0"):
+        global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
+        trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
+        master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
+        num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
+        workers = []
+
+
+        write_parameters(model_path,depth_nn_hidden,depth_nn_layers_hidden,depth_nn_out,entropy_factor,activation_nn_hidden,activation_nn_out,learning_rate,optimizer,activations,p_len_episode_buffer,max_episode_length,OrderFast,OrderSlow,LT_s,LT_f,InvMax,max_training_episodes)
+
+        # Create worker classes
+        for i in range(num_workers):
+            if not os.path.exists(best_path + '/train_' + str(i)):
+                os.makedirs(best_path + '/train_' + str(i))
+            workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
+        saver = tf.train.Saver(max_to_keep=5)
+        saver_best = tf.train.Saver(max_to_keep=None)
+
+    with tf.Session() as sess:
+        coord = tf.train.Coordinator()
+        if load_model == True:
+            print('Loading Model...')
+            ckpt = tf.train.get_checkpoint_state(model_path)
+            saver.restore(sess, ckpt.model_checkpoint_path)
+        else:
+            sess.run(tf.global_variables_initializer())
+
+        # This is where the asynchronous magic happens.
+        # Start the "work" process for each worker in a separate threat.
+
+
+        worker_threads = []
+        temp_best_solutions = np.zeros([len(workers)])
+        for worker in workers:
+            worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver,saver_best)
+            t = threading.Thread(target=(worker_work))
+            t.start()
+            sleep(0.5)
+            worker_threads.append(t)
+        coord.join(worker_threads)
+        for index,worker in enumerate(workers):
+            temp_best_solutions[index] = worker.best_solution
+        best_solution_found = np.min(temp_best_solutions)
+        return -best_solution_found
+
+import GPyOpt
+
+# --- Load GPyOpt
+from GPyOpt.methods import BayesianOptimization
+#import numpy as np
+
+bounds = [#{'name': 'x0', 'type': 'discrete', 'domain': (40,70)},\
+         #{'name': 'x1', 'discrete': 'discrete', 'domain': (20,40)},\
+          {'name': 'x2', 'type': 'continuous', 'domain': (0.0001,0.0000001)},\
+          #{'name': 'x3', 'type': 'discrete', 'domain': (20,50)},\
+          {'name': 'x4', 'type': 'continuous', 'domain': (0.95,0.999)},\
+           # {'name': 'x5', 'type': 'discrete', 'domain': (20,30)},\
+          {'name': 'x6', 'type': 'continuous', 'domain': (0.01,0.00001)},]
+
+
+
+#bounds = [{'name': 'x', 'type': 'continuous', 'domain': [(-1,1),(-1,1)]}]
+# --- Solve your problem
+
+
+test = BayesianOptimization(f=obj_function,domain=bounds)#bounds)
+#myBopt = BayesianOptimization(f=f, domain=domain)
+
+test.run_optimization(max_iter=4,verbosity=True,report_file='./report.txt')
+test.save_evaluations('./evaluations.txt')
+test.plot_acquisition()
+test.plot_convergence()
+
+test.plot_acquisition(filename='./test.png')
+test.plot_convergence(filename='./test2.png')
+#myBopt.run_optimization(max_iter=5)
+#myBopt.plot_acquisition()
