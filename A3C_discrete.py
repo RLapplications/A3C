@@ -29,7 +29,7 @@ with open("./Demand.csv") as csvfile:
 depth_nn_hidden = 1
 depth_nn_layers_hidden = [70, 40 , 10 , 20]
 depth_nn_out = 40
-entropy_factor = 0.0001
+entropy_factor = 0.0000001
 p_len_episode_buffer = 50
 gamma = .99
 InvMax=30
@@ -62,7 +62,7 @@ cap_fast = 1
 cap_slow = 1
 
 initial_state = [3,3,2,3,2,3,2,3,2,3,2,3,2,3,2]
-max_training_episodes = 30
+max_training_episodes = 10000000
 
 
 
@@ -405,50 +405,36 @@ a_size = len(actions) # Agent can move Left, Right, or Fire
 
 s_size = LT_s+1
 
-def obj_function(dec_vect):
- #  depth_nn_hidden = [dec_vect[0][0],0,0,0]
- #  depth_nn_out = dec_vect[0][1]
- #  entropy_factor = dec_vect[0][2]
- #  p_len_episode_buffer = dec_vect[0][3]
- #  gamma = dec_vect[0][4]
- #  InvMax = dec_vect[0][5]
-# #  learning_rate=dec_vect[0][6]
-
-
-    entropy_factor = dec_vect[0][0]
-    gamma = dec_vect[0][1]
-    learning_rate=dec_vect[0][2]
 
 
 
+tf.reset_default_graph()
 
-    tf.reset_default_graph()
+load_model = False
+model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
+best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
 
-    load_model = False
-    model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
-    best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
-
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-
-
-    with tf.device("/cpu:0"):
-        global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
-        trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
-        master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
-        num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
-        workers = []
+if not os.path.exists(model_path):
+    os.makedirs(model_path)
 
 
-        write_parameters(model_path,depth_nn_hidden,depth_nn_layers_hidden,depth_nn_out,entropy_factor,activation_nn_hidden,activation_nn_out,learning_rate,optimizer,activations,p_len_episode_buffer,max_episode_length,OrderFast,OrderSlow,LT_s,LT_f,InvMax,max_training_episodes)
+with tf.device("/cpu:0"):
+    global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
+    trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
+    master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
+    num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
+    workers = []
 
-        # Create worker classes
-        for i in range(num_workers):
-            if not os.path.exists(best_path + '/train_' + str(i)):
-                os.makedirs(best_path + '/train_' + str(i))
-            workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
-        saver = tf.train.Saver(max_to_keep=5)
-        saver_best = tf.train.Saver(max_to_keep=None)
+
+    write_parameters(model_path,depth_nn_hidden,depth_nn_layers_hidden,depth_nn_out,entropy_factor,activation_nn_hidden,activation_nn_out,learning_rate,optimizer,activations,p_len_episode_buffer,max_episode_length,OrderFast,OrderSlow,LT_s,LT_f,InvMax,max_training_episodes)
+
+    # Create worker classes
+    for i in range(num_workers):
+        if not os.path.exists(best_path + '/train_' + str(i)):
+            os.makedirs(best_path + '/train_' + str(i))
+        workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
+    saver = tf.train.Saver(max_to_keep=5)
+    saver_best = tf.train.Saver(max_to_keep=None)
 
     with tf.Session() as sess:
         coord = tf.train.Coordinator()
@@ -475,37 +461,4 @@ def obj_function(dec_vect):
         for index,worker in enumerate(workers):
             temp_best_solutions[index] = worker.best_solution
         best_solution_found = np.min(temp_best_solutions)
-        return -best_solution_found
 
-import GPyOpt
-
-# --- Load GPyOpt
-from GPyOpt.methods import BayesianOptimization
-#import numpy as np
-
-bounds = [#{'name': 'x0', 'type': 'discrete', 'domain': (40,70)},\
-         #{'name': 'x1', 'discrete': 'discrete', 'domain': (20,40)},\
-          {'name': 'x2', 'type': 'continuous', 'domain': (0.0001,0.0000001)},\
-          #{'name': 'x3', 'type': 'discrete', 'domain': (20,50)},\
-          {'name': 'x4', 'type': 'continuous', 'domain': (0.95,0.999)},\
-           # {'name': 'x5', 'type': 'discrete', 'domain': (20,30)},\
-          {'name': 'x6', 'type': 'continuous', 'domain': (0.01,0.00001)},]
-
-
-
-#bounds = [{'name': 'x', 'type': 'continuous', 'domain': [(-1,1),(-1,1)]}]
-# --- Solve your problem
-
-
-test = BayesianOptimization(f=obj_function,domain=bounds)#bounds)
-#myBopt = BayesianOptimization(f=f, domain=domain)
-
-test.run_optimization(max_iter=4,verbosity=True,report_file='./report.txt')
-test.save_evaluations('./evaluations.txt')
-test.plot_acquisition()
-test.plot_convergence()
-
-test.plot_acquisition(filename='./test.png')
-test.plot_convergence(filename='./test2.png')
-#myBopt.run_optimization(max_iter=5)
-#myBopt.plot_acquisition()
