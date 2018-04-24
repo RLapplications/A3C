@@ -32,7 +32,7 @@ depth_nn_out = 40
 entropy_factor = 0.0000001
 p_len_episode_buffer = 50
 gamma = .99
-InvMax=30
+InvMax= 25
 learning_rate = 0.0001
 
 activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
@@ -56,12 +56,12 @@ LT_f=3
 h=-2
 b=-38
 p=-0
-C_f=-10
-C_s=-0
+C_f=-20
+C_s=-10
 cap_fast = 2
 cap_slow = 2
 
-initial_state = [3,3,2,3,2,3,2,3,2,3,2,3,2,3,2]
+initial_state = [3,4,2,4,2,4,2,4,2,4,2,4,2,4,2]
 max_training_episodes = 10000000
 
 
