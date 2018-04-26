@@ -11,7 +11,7 @@ import os
 import itertools
 import csv
 import time
-
+import random
 Demand=[]
 with open("./Demand.csv") as csvfile:
     reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
@@ -272,7 +272,7 @@ class Worker():
                     a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
 
 
-                    if self.inv_vect[0] <= InvMin or self.inv_vect[0] >= InvMax:
+                    if self.bool_evaluating != True and (self.inv_vect[0] <= InvMin or self.inv_vect[0] >= InvMax):
                         d = True
                     else:
                         d = False
@@ -282,7 +282,7 @@ class Worker():
                         if self.bool_evaluating == True:
                             s1 = deepcopy(self.Transition(Demand[episode_step_count], actions[a]))
                         else:
-                            s1 = deepcopy(self.Transition(int(np.round(np.random.uniform(0,5))), actions[
+                            s1 = deepcopy(self.Transition(random.randint(0,5), actions[
                                 a]))
                     r = self.Reward(s1, actions[a])
 
