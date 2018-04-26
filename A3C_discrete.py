@@ -56,8 +56,8 @@ LT_f=3
 h=-2
 b=-38
 p=-0
-C_f=-20
-C_s=-10
+C_f=-10
+C_s=-0
 cap_fast = 1
 cap_slow = 1
 
