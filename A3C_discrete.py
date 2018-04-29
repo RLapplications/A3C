@@ -51,7 +51,7 @@ InvMin=-10
 Penalty = -1
 
 #CASE PARAMETERS
-LT_s=4
+LT_s=6
 LT_f=3
 h=-2
 b=-38
@@ -61,7 +61,7 @@ C_s=-0
 cap_fast = 1
 cap_slow = 1
 
-initial_state = [3,4,2,4,2]
+initial_state = [3,4,2,4,2,4,2]
 max_training_episodes = 10000000
 
 
