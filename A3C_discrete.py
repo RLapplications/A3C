@@ -45,23 +45,23 @@ activations = [tf.nn.relu,tf.nn.relu]
 max_episode_length = 1000
  # discount rate for advantage estimation and reward discounting
 nb_workers = 4
-OrderFast=5
+OrderFast=6
 OrderSlow=10
 InvMin=-10
 Penalty = -1
 
 #CASE PARAMETERS
-LT_s=6
+LT_s=14
 LT_f=3
 h=-2
 b=-38
 p=-0
-C_f=-10
-C_s=-0
-cap_fast = 1
-cap_slow = 1
+C_f=-20
+C_s=-10
+cap_fast = 2
+cap_slow = 2
 
-initial_state = [3,4,2,4,2,4,2]
+initial_state = [3,4,2,4,2,4,2,4,2,4,2,4,2,4,2]
 max_training_episodes = 10000000
 
 
