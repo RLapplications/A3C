@@ -26,12 +26,14 @@ with open("./Demand.csv") as csvfile:
 
 dec_vect = np.zeros(7)
 
-dec_ranges   = [{'name': 'entropy', 'type': 'continuous', 'domain': (0.00001,0.000000001)},
+dec_ranges   = [{'name': 'entropy', 'type': 'continuous', 'domain': (0.0001,0.000000001)},
             {'name': 'discount', 'type': 'continuous', 'domain': (0.95,0.999)},
             {'name': 'lr', 'type': 'continuous', 'domain': (0.01, 0.000001)},
-            {'name': 'depth', 'type': 'discrete', 'domain': (1,2,3)},
-            {'name': 'hidden1', 'type': 'discrete', 'domain': (4,20,70)},
-            {'name': 'hidden2', 'type': 'discrete', 'domain': (2,20,40)},
+            {'name': 'depth', 'type': 'discrete', 'domain': (1,2,3,4)},
+            {'name': 'hidden1', 'type': 'discrete', 'domain': (5,50,100,150)},
+            {'name': 'hidden2', 'type': 'discrete', 'domain': (2,20,40,60)},
+            {'name': 'hidden3', 'type': 'discrete', 'domain': (2,10,20,40)},
+            {'name': 'hidden4', 'type': 'discrete', 'domain': (2,10,20)},
             {'name': 'depth out', 'type': 'discrete', 'domain': (2,10,20)},
             {'name': 'episode_buffer', 'type': 'discrete', 'domain': (20,50)},
             {'name': 'InvMax', 'type': 'discrete', 'domain': (20,25,30)}]
@@ -58,7 +60,7 @@ activations = [tf.nn.relu,tf.nn.relu]
 
 
 max_episode_length = 1000
-max_no_improvement = 5000
+max_no_improvement = 5
  # discount rate for advantage estimation and reward discounting
 nb_workers = 4
 OrderFast=6
@@ -432,10 +434,10 @@ def objective(dec_vect):
     gamma = dec_vect[0][1]
     learning_rate = dec_vect[0][2]
     depth_nn_hidden = dec_vect[0][3]
-    depth_nn_layers_hidden=[dec_vect[0][4],dec_vect[0][5],10,10]
-    depth_nn_out = dec_vect[0][6]
-    p_len_episode_buffer = dec_vect[0][7]
-    InvMax = dec_vect[0][8]
+    depth_nn_layers_hidden=[dec_vect[0][4],dec_vect[0][5],dec_vect[0][6],dec_vect[0][7]]
+    depth_nn_out = dec_vect[0][8]
+    p_len_episode_buffer = dec_vect[0][9]
+    InvMax = dec_vect[0][10]
 
 
 
