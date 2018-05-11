@@ -333,9 +333,9 @@ class Worker():
                     print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
                     if(episode_reward / episode_step_count > self.best_solution and episode_step_count==max_episode_length-1):
                         self.best_solution = episode_reward / episode_step_count
-                        f= open(self.best_path + '/Train_'+str(self.number)+"/best_solution.txt","w")
-                        f.write(str(self.best_solution) + ' ' + str (episode_step_count))
-                        f.close()
+                        #f= open(self.best_path + '/Train_'+str(self.number)+"/best_solution.txt","w")
+                        #f.write(str(self.best_solution) + ' ' + str (episode_step_count))
+                        #f.close()
                         saver_best.save(sess, self.best_path + '/Train_'+str(self.number) +'/model_' +' ' + str(episode_count) + '.cptk')
                         sess.run(self.no_improvement.assign(0))
                         #print(sess.run(self.number,self.no_improvement))
