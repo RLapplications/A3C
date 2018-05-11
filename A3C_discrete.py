@@ -437,51 +437,51 @@ def objective():
         os.makedirs(model_path)
 
 
-    with tf.device("/device:GPU:0"):
-        global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
-        #no_improvement = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
-        trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
-        master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
-        num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
-        workers = []
+
+    global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
+    #no_improvement = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
+    trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
+    master_network = AC_Network(s_size, a_size, 'global', None)  # Generate global network
+    num_workers = nb_workers#multiprocessing.cpu_count()  # Set workers to number of available CPU threads
+    workers = []
 
 
-        write_parameters(model_path,depth_nn_hidden,depth_nn_layers_hidden,depth_nn_out,entropy_factor,activation_nn_hidden,activation_nn_out,learning_rate,optimizer,activations,p_len_episode_buffer,max_episode_length,OrderFast,OrderSlow,LT_s,LT_f,InvMax,max_training_episodes)
+    write_parameters(model_path,depth_nn_hidden,depth_nn_layers_hidden,depth_nn_out,entropy_factor,activation_nn_hidden,activation_nn_out,learning_rate,optimizer,activations,p_len_episode_buffer,max_episode_length,OrderFast,OrderSlow,LT_s,LT_f,InvMax,max_training_episodes)
 
-        # Create worker classes
-        for i in range(num_workers):
-            if not os.path.exists(best_path + '/train_' + str(i)):
-                os.makedirs(best_path + '/train_' + str(i))
-            workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
-        saver = tf.train.Saver(max_to_keep=5)
-        saver_best = tf.train.Saver(max_to_keep=None)
+    # Create worker classes
+    for i in range(num_workers):
+        if not os.path.exists(best_path + '/train_' + str(i)):
+            os.makedirs(best_path + '/train_' + str(i))
+        workers.append(Worker(None, i, s_size, a_size, trainer, model_path, best_path, global_episodes))
+    saver = tf.train.Saver(max_to_keep=5)
+    saver_best = tf.train.Saver(max_to_keep=None)
 
-        with tf.Session() as sess:
-            coord = tf.train.Coordinator()
-            if load_model == True:
-                print('Loading Model...')
-                ckpt = tf.train.get_checkpoint_state(model_path)
-                saver.restore(sess, ckpt.model_checkpoint_path)
-            else:
-                sess.run(tf.global_variables_initializer())
+    with tf.Session() as sess:
+        coord = tf.train.Coordinator()
+        if load_model == True:
+            print('Loading Model...')
+            ckpt = tf.train.get_checkpoint_state(model_path)
+            saver.restore(sess, ckpt.model_checkpoint_path)
+        else:
+            sess.run(tf.global_variables_initializer())
 
-            # This is where the asynchronous magic happens.
-            # Start the "work" process for each worker in a separate threat.
+        # This is where the asynchronous magic happens.
+        # Start the "work" process for each worker in a separate threat.
 
 
-            worker_threads = []
-            temp_best_solutions = np.zeros(len(workers))
-            for worker in workers:
-                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver,saver_best)
-                t = threading.Thread(target=(worker_work))
-                t.start()
-                sleep(0.5)
-                worker_threads.append(t)
-            coord.join(worker_threads)
-            for index,worker in enumerate(workers):
-                temp_best_solutions[index] = worker.best_solution
-            best_solution_found = np.min(temp_best_solutions)
-            return -best_solution_found
+        worker_threads = []
+        temp_best_solutions = np.zeros(len(workers))
+        for worker in workers:
+            worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver,saver_best)
+            t = threading.Thread(target=(worker_work))
+            t.start()
+            sleep(0.5)
+            worker_threads.append(t)
+        coord.join(worker_threads)
+        for index,worker in enumerate(workers):
+            temp_best_solutions[index] = worker.best_solution
+        best_solution_found = np.min(temp_best_solutions)
+        return -best_solution_found
 
 if __name__== "__main__":
     objective()
