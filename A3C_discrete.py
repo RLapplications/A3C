@@ -24,19 +24,6 @@ with open("./Demand.csv") as csvfile:
 
 #HYPERPARAMETERS
 
-dec_vect = np.zeros(7)
-
-dec_ranges   = [{'name': 'entropy', 'type': 'continuous', 'domain': (0.00001,0.000000001)},
-            {'name': 'discount', 'type': 'continuous', 'domain': (0.95,0.999)},
-            {'name': 'lr', 'type': 'continuous', 'domain': (0.01, 0.000001)},
-            {'name': 'depth', 'type': 'discrete', 'domain': (1,2,3)},
-            {'name': 'hidden1', 'type': 'discrete', 'domain': (4,20,70)},
-            {'name': 'hidden2', 'type': 'discrete', 'domain': (2,20,40)},
-            {'name': 'depth out', 'type': 'discrete', 'domain': (2,10,20)},
-            {'name': 'episode_buffer', 'type': 'discrete', 'domain': (20,50)},
-            {'name': 'InvMax', 'type': 'discrete', 'domain': (20,25,30)}]
-
-
 
 
 
@@ -58,7 +45,7 @@ activations = [tf.nn.relu,tf.nn.relu]
 
 
 max_episode_length = 1000
-max_no_improvement = 5000
+max_no_improvement = 50
  # discount rate for advantage estimation and reward discounting
 nb_workers = 4
 
@@ -439,17 +426,8 @@ actions=CreateActions(OrderFast,OrderSlow)#np.array([[0,0],[0,5],[5,0],[5,5]])
 a_size = len(actions) # Agent can move Left, Right, or Fire
 s_size = LT_s+1
 
-def objective(dec_vect):
+def objective():
 
-
-    entropy_factor = dec_vect[0][0]
-    gamma = dec_vect[0][1]
-    learning_rate = dec_vect[0][2]
-    depth_nn_hidden = dec_vect[0][3]
-    depth_nn_layers_hidden=[dec_vect[0][4],dec_vect[0][5],10,10]
-    depth_nn_out = dec_vect[0][6]
-    p_len_episode_buffer = dec_vect[0][7]
-    InvMax = dec_vect[0][8]
 
 
 
@@ -462,7 +440,7 @@ def objective(dec_vect):
         os.makedirs(model_path)
 
 
-    with tf.device("/cpu:0"):
+    with tf.device("/device:GPU:0"):
         global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
         #no_improvement = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
         trainer = optimizer #tf.train.AdamOptimizer(learning_rate=learning_rate)
@@ -509,10 +487,11 @@ def objective(dec_vect):
             return -best_solution_found
 
 if __name__== "__main__":
-    BO = BayesianOptimization(f=objective, domain=dec_ranges)
-    BO.run_optimization(max_iter=100, verbosity=True, report_file='./report.txt')
-    BO.save_evaluations('./evaluations.txt')
-    BO.plot_acquisition()
-    BO.plot_convergence()
+    objective()
+  #  BO = BayesianOptimization(f=objective, domain=dec_ranges)
+  #  BO.run_optimization(max_iter=100, verbosity=True, report_file='./report.txt')
+#  #  BO.save_evaluations('./evaluations.txt')
+  #  BO.plot_acquisition()
+  #  BO.plot_convergence()
 
 
