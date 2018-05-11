@@ -13,9 +13,6 @@ import csv
 import time
 import random
 Demand=[]
-import GPyOpt
-import GPy
-from GPyOpt.methods import BayesianOptimization
 
 with open("./Demand.csv") as csvfile:
     reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
