@@ -42,7 +42,7 @@ activations = [tf.nn.relu,tf.nn.relu]
 
 
 max_episode_length = 1000
-max_no_improvement = 50
+max_no_improvement = 5000
  # discount rate for advantage estimation and reward discounting
 nb_workers = 4
 
