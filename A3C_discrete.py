@@ -26,13 +26,13 @@ with open("./Demand.csv") as csvfile:
 
 
 depth_nn_hidden = 1
-depth_nn_layers_hidden = [70, 40 , 10 , 20]
-depth_nn_out = 40
-entropy_factor = 0.0000001
+depth_nn_layers_hidden = [40, 40 , 10 , 20]
+depth_nn_out = 20
+entropy_factor = 0.000000001
 p_len_episode_buffer = 50
 gamma = .99
 
-learning_rate = 0.0001
+learning_rate = 0.001
 
 activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
 activation_nn_out=tf.nn.relu
@@ -42,7 +42,7 @@ activations = [tf.nn.relu,tf.nn.relu]
 
 
 max_episode_length = 1000
-max_no_improvement = 5000
+max_no_improvement = 50000
  # discount rate for advantage estimation and reward discounting
 nb_workers = 4
 
@@ -57,8 +57,8 @@ Penalty = -1
 
 LT_s = 1
 LT_f = 0
-InvMax = (LT_s+1)*(2*Demand_Max+1)
-InvMin = -(LT_s+1)*(2*Demand_Max)
+InvMax = 150#(LT_s+1)*(2*Demand_Max+1)
+InvMin = -50#-(LT_s+1)*(2*Demand_Max)
 
 
 h=-5
@@ -284,8 +284,8 @@ class Worker():
                     # Take an action using probabilities from policy network output.
                     a_dist, v = sess.run([self.local_AC.policy, self.local_AC.value],
                                          feed_dict={self.local_AC.inputs: [s]})  # ,
-                    a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
-
+                    #a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
+                    a = np.argmax(a_dist[0])
 
                     if self.bool_evaluating != True and (self.inv_vect[0] <= InvMin or self.inv_vect[0] >= InvMax):
                         d = True
