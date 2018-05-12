@@ -284,8 +284,8 @@ class Worker():
                     # Take an action using probabilities from policy network output.
                     a_dist, v = sess.run([self.local_AC.policy, self.local_AC.value],
                                          feed_dict={self.local_AC.inputs: [s]})  # ,
-                    #a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
-                    a = np.argmax(a_dist[0])
+                    a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
+                    #a = np.argmax(a_dist[0])
 
                     if self.bool_evaluating != True and (self.inv_vect[0] <= InvMin or self.inv_vect[0] >= InvMax):
                         d = True
