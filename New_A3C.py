@@ -420,8 +420,8 @@ def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_
 
 
 def objective(args):
-    learning_rate = args.initial_lr
-    entropy_factor = args.entropy
+    learning_rate = 0.001#args.initial_lr
+    entropy_factor = 0.00001#args.entropy
     gamma = args.gamma
     max_no_improvement = args.max_no_improvement
     max_training_episodes = args.max_training_episodes
@@ -430,6 +430,8 @@ def objective(args):
     depth_nn_out = args.depth_nn_out
     p_len_episode_buffer = args.p_len_episode_buffer
     initial_state = args.initial_state
+    InvMax = args.invmax  # (LT_s+1)*(2*Demand_Max+1)
+    InvMin = args.invmin  # -(LT_s+1)*(2*Demand_Max)
 
     activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
     activation_nn_out = tf.nn.relu
@@ -441,15 +443,14 @@ def objective(args):
     nb_workers = 4
 
     Demand_Max = 4
-    OrderFast = 2 * Demand_Max + 1
-    OrderSlow = 2 * Demand_Max + 1
+    OrderFast = 5
+    OrderSlow = 5
 
     Penalty = -1
 
     LT_s = 1
     LT_f = 0
-    InvMax = 150  # (LT_s+1)*(2*Demand_Max+1)
-    InvMin = -50  # -(LT_s+1)*(2*Demand_Max)
+
 
     h = -5
     b = -495
@@ -487,8 +488,8 @@ def objective(args):
 
     # Create worker classes
     for i in range(num_workers):
-        if not os.path.exists(best_path + '/train_' + str(i)):
-            os.makedirs(best_path + '/train_' + str(i))
+        if not os.path.exists(best_path + '/Train_' + str(i)):
+            os.makedirs(best_path + '/Train_' + str(i))
         workers.append(Worker(i, s_size, a_size, trainer, model_path, best_path, global_episodes,depth_nn_out,activation_nn_hidden,depth_nn_hidden,depth_nn_layers_hidden,activation_nn_out,entropy_factor))
     saver = tf.train.Saver(max_to_keep=5)
     saver_best = tf.train.Saver(max_to_keep=None)
@@ -564,6 +565,14 @@ if __name__ == '__main__':
                         help="initial_state. Default = [3,0]",
                         dest="initial_state")
 
+
+    parser.add_argument('--invmax', default=150, type=float,
+                        help="invmax. Default = 150",
+                        dest="invmax")
+
+    parser.add_argument('--invmin', default=-15, type=float,
+                        help="invmin. Default = -15",
+                        dest="invmin")
     args = parser.parse_args()
 
     objective(args)

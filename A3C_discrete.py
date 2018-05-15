@@ -25,8 +25,8 @@ with open("./Demand.csv") as csvfile:
 
 
 
-depth_nn_hidden = 1
-depth_nn_layers_hidden = [40, 40 , 10 , 20]
+depth_nn_hidden = 3
+depth_nn_layers_hidden = [70, 40 , 10 , 20]
 depth_nn_out = 20
 entropy_factor = 0.000000001
 p_len_episode_buffer = 50
@@ -36,7 +36,6 @@ learning_rate = 0.001
 
 activation_nn_hidden =[tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]
 activation_nn_out=tf.nn.relu
-
 optimizer = tf.train.AdamOptimizer(learning_rate)
 activations = [tf.nn.relu,tf.nn.relu]
 
@@ -284,8 +283,11 @@ class Worker():
                     # Take an action using probabilities from policy network output.
                     a_dist, v = sess.run([self.local_AC.policy, self.local_AC.value],
                                          feed_dict={self.local_AC.inputs: [s]})  # ,
-                    a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
-                    #a = np.argmax(a_dist[0])
+
+                    if self.bool_evaluating != True:
+                        a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
+                    else:
+                        a = np.argmax(a_dist[0])
 
                     if self.bool_evaluating != True and (self.inv_vect[0] <= InvMin or self.inv_vect[0] >= InvMax):
                         d = True
@@ -485,10 +487,7 @@ def objective():
 
 if __name__== "__main__":
     objective()
-  #  BO = BayesianOptimization(f=objective, domain=dec_ranges)
-  #  BO.run_optimization(max_iter=100, verbosity=True, report_file='./report.txt')
-#  #  BO.save_evaluations('./evaluations.txt')
-  #  BO.plot_acquisition()
-  #  BO.plot_convergence()
+
+
 
 
