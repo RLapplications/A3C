@@ -20,20 +20,10 @@ with open("./Demand.csv") as csvfile:
     for row in reader:
         Demand.append(int(row[0]))
 
-# HYPERPARAMETERS
-
-
-
-
-
-
-
-
 def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min):
     done = False
     s1 = deepcopy(s)
     reward = 0
-
     s1[LT_f] += a[0]
     s1[LT_s] += a[1]
     reward += a[0] * C_f + a[1] * C_s
@@ -125,6 +115,8 @@ class AC_Network():
                                                weights_initializer=normalized_columns_initializer(0.01),
                                                biases_initializer=None)
 
+
+
             self.value = slim.fully_connected(self.state_out, 1,
                                               activation_fn=None,
                                               weights_initializer=normalized_columns_initializer(1.0),
@@ -179,32 +171,6 @@ class Worker():
         self.bool_evaluating = None
         self.best_solution = -9999999999999
 
-   ######def Transition(self):
-   ###    # self.inv_vect[0] -= Demand
-   ###    self.inv_vect[0] += self.inv_vect[1]
-   ###    for i in range(1, LT_s):
-   ###        self.inv_vect[i] = self.inv_vect[i + 1]
-   ###    self.inv_vect[LT_s] = 0  # Action[1]
-   ###    # self.inv_vect[LT_f] += Action[0]
-   ###    return self.inv_vect
-
-    ##def update_state(self, Demand, Action):
-    ##    self.inv_vect[0] -= Demand
-    ##    self.inv_vect[LT_f] += Action[0]
-    ##    self.inv_vect[LT_s] += Action[1]
-    ##    return self.inv_vect
-
-    #def Reward(self, s1, Action):
-    #    reward = 0
-    #    reward += np.ceil(float(Action[1] / cap_slow)) * C_s
-    #    reward += np.ceil(float(Action[0] / cap_fast)) * C_f
-    #    if (s1[0] >= 0):
-    #        reward += s1[0] * h
-    #    else:
-    #        reward += -s1[0] * b
-    #    return reward / 1000000
-
-
     def train(self, rollout, sess, gamma, bootstrap_value):
         rollout = np.array(rollout)
         observations = rollout[:, 0]
@@ -244,7 +210,7 @@ class Worker():
             feed_dict=feed_dict)
         return v_l / len(rollout), p_l / len(rollout), e_l / len(rollout), g_n, v_n
 
-    def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement):
+    def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest):
         # best_solution = -99999999999
         episode_count = sess.run(self.global_episodes)
         total_steps = 0
@@ -276,7 +242,11 @@ class Worker():
                     # Take an action using probabilities from policy network output.
                     a_dist, v = sess.run([self.local_AC.policy, self.local_AC.value],
                                          feed_dict={self.local_AC.inputs: [s]})  # ,
-                    a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
+
+                    if  pick_largest:
+                        a = np.argmax(a_dist[0])
+                    else:
+                        a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
                     # a = np.argmax(a_dist[0])
 
                     #if self.bool_evaluating != True and (self.inv_vect[0] <= InvMin or self.inv_vect[0] >= InvMax):
@@ -309,8 +279,7 @@ class Worker():
 
                     # If the episode hasn't ended, but the experience buffer is full, then we
                     # make an update step using that experience rollout.
-                    if len(
-                            episode_buffer) == p_len_episode_buffer and d != True and episode_step_count != max_episode_length - 1 and self.bool_evaluating != True:
+                    if len(episode_buffer) == p_len_episode_buffer and d != True and episode_step_count != max_episode_length - 1 and self.bool_evaluating != True:
                         # Since we don't know what the true final return is, we "bootstrap" from our current
                         # value estimation.
                         v1 = sess.run(self.local_AC.value,
@@ -326,8 +295,7 @@ class Worker():
                     #    break
                 if self.bool_evaluating == True:
                     print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
-                    if (
-                                episode_reward / episode_step_count > self.best_solution and episode_step_count == max_episode_length - 1):
+                    if (episode_reward / episode_step_count > self.best_solution and episode_step_count == max_episode_length - 1):
                         self.best_solution = episode_reward / episode_step_count
                         f= open(self.best_path +"/best_solution%i.txt"%self.number,"w")
                         f.write(str(self.best_solution) + ' ' + str (episode_step_count))
@@ -379,6 +347,19 @@ class Worker():
                 if sess.run(self.no_improvement) >= max_no_improvement:
                     break
 
+
+def NewCreateStates(LT_f,LT_s,Inv_Max,Inv_Min,O_f,O_s):
+    Temp = []
+    total_pipe = []
+    total_pipe.append(range(Inv_Min,Inv_Max+1))
+    for i in range(1,LT_f+1):
+        total_pipe.append(range(O_f+O_s+1))
+    for i in range(LT_f+1,LT_s):
+        total_pipe.append(range(O_s+1))
+    for index,i in enumerate(itertools.product(*total_pipe)):
+        Temp.append(list(i))
+        Temp[index].append(0)
+    return Temp
 
 def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
                      activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
@@ -432,7 +413,8 @@ def objective(args):
     initial_state = args.initial_state
     InvMax = args.invmax  # (LT_s+1)*(2*Demand_Max+1)
     InvMin = args.invmin  # -(LT_s+1)*(2*Demand_Max)
-
+    training = args.training
+    pick_largest = args.high
     activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
     activation_nn_out = tf.nn.relu
     optimizer = tf.train.AdamOptimizer(learning_rate)
@@ -467,7 +449,11 @@ def objective(args):
     s_size = LT_s + 1
 
     tf.reset_default_graph()
-    load_model = False
+    if training:
+        load_model = False
+    else:
+        load_model=True
+
     model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
     best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
 
@@ -497,8 +483,9 @@ def objective(args):
     with tf.Session() as sess:
         coord = tf.train.Coordinator()
         if load_model == True:
+
             print('Loading Model...')
-            ckpt = tf.train.get_checkpoint_state(model_path)
+            ckpt = tf.train.get_checkpoint_state('./')
             saver.restore(sess, ckpt.model_checkpoint_path)
         else:
             sess.run(tf.global_variables_initializer())
@@ -506,35 +493,65 @@ def objective(args):
         # This is where the asynchronous magic happens.
         # Start the "work" process for each worker in a separate threat.
 
+        if(training):
+            worker_threads = []
+            temp_best_solutions = np.zeros(len(workers))
+            for worker in workers:
+                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest)
+                t = threading.Thread(target=(worker_work))
+                t.start()
+                sleep(0.5)
+                worker_threads.append(t)
+            coord.join(worker_threads)
+            for index, worker in enumerate(workers):
+                temp_best_solutions[index] = worker.best_solution
+            best_solution_found = np.min(temp_best_solutions)
+        else:
+            States = NewCreateStates(LT_f,LT_s,10,-10,OrderFast,OrderSlow)
+            print(States)
+            policy_fast = []
+            policy_slow = []
+            A3C_policy = []
+            for index, state in enumerate(States):
+                prob_vector = sess.run(workers[0].local_AC.policy,feed_dict={workers[0].local_AC.inputs:[state]})[0]
+                A3C_policy.append(prob_vector)
+                #print(state,prob_vector,np.sum(prob_vector))
+                action_prob_fast = np.zeros(OrderFast + 1)
+                action_prob_slow = np.zeros(OrderSlow + 1)
 
-        worker_threads = []
-        temp_best_solutions = np.zeros(len(workers))
-        for worker in workers:
-            worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement)
-            t = threading.Thread(target=(worker_work))
-            t.start()
-            sleep(0.5)
-            worker_threads.append(t)
-        coord.join(worker_threads)
-        for index, worker in enumerate(workers):
-            temp_best_solutions[index] = worker.best_solution
-        best_solution_found = np.min(temp_best_solutions)
-        return -best_solution_found
+                for i in range(len(actions)):
+                    action_prob_fast[actions[i][0]] += prob_vector[i]
+                    action_prob_slow[actions[i][1]] += prob_vector[i]
+                print(state,np.argmax(action_prob_fast),np.argmax(action_prob_slow),"FAST", action_prob_fast,"SLOW", action_prob_slow)
+                policy_fast.append(deepcopy(action_prob_fast))
+                policy_slow.append(deepcopy(action_prob_slow))
+
+            np.savetxt('A3C_policy.csv',A3C_policy,delimiter=';')
+            with open('cost.csv', 'w') as f:
+               for index, i in enumerate(States):
+                   for j in States[index]:
+                        f.write(str(j) + ';')
+                   f.write(';')
+                   for j in policy_fast[index]:
+                        f.write(str(j) + ';')
+                   f.write(';')
+                   for j in policy_slow[index]:
+                        f.write(str(j) + ';')
+                   f.write(';')
+                   f.write('\n')
+        return
 
 
-#if __name__ == "__main__":
-#    objective()
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-lr', '--initial_lr', default=0.001, type=float,
                         help="Initial value for the learning rate. If a value of 0 is specified, the learning rate will be sampled from a LogUniform(10**-4, 10**-2) distribution. Default = 0.001",
                         dest="initial_lr")
 
-    parser.add_argument('--entropy', default=0.000001, type=float,
-                        help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.000001",
+    parser.add_argument('--entropy', default=1, type=float,
+                        help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
 
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
@@ -558,7 +575,7 @@ if __name__ == '__main__':
 
 
     parser.add_argument('--p_len_episode_buffer', default=50, type=float,
-                        help="p_len_episode_buffer. Default = 10000000",
+                        help="p_len_episode_buffer. Default = 50",
                         dest="p_len_episode_buffer")
 
     parser.add_argument('--initial_state', default=[3,0], type=float,
@@ -566,13 +583,21 @@ if __name__ == '__main__':
                         dest="initial_state")
 
 
-    parser.add_argument('--invmax', default=150, type=float,
+    parser.add_argument('--invmax', default=10, type=float,
                         help="invmax. Default = 150",
                         dest="invmax")
 
-    parser.add_argument('--invmin', default=-15, type=float,
+    parser.add_argument('--invmin', default=-10, type=float,
                         help="invmin. Default = -15",
                         dest="invmin")
+
+    parser.add_argument('--training', default= True, type=str,
+                        help="training. Default = True",
+                        dest="training")
+    parser.add_argument('--high', default= False, type=float,
+                        help="Pick largest likelihood. Default = False",
+                        dest="high")
+
     args = parser.parse_args()
 
     objective(args)
