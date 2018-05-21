@@ -553,7 +553,7 @@ def obj_bo(list):
     learning_rate = list[0]
     entropy_factor = list[1]
     gamma = 0.99#list[2]
-    max_no_improvement = 1000
+    max_no_improvement = 2500
     max_training_episodes = 500000
     depth_nn_hidden = 1#list[2]
     depth_nn_layers_hidden = [40,20,10,10]
@@ -566,7 +566,7 @@ def obj_bo(list):
     pick_largest = False
 
     activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
-    activation_nn_out = tf.nn.elu
+    activation_nn_out = tf.nn.relu
     optimizer = tf.train.AdamOptimizer(learning_rate)
     activations = [tf.nn.relu, tf.nn.relu]
     max_episode_length = 1000

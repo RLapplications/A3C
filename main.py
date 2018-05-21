@@ -30,8 +30,8 @@ if __name__ == '__main__':
     #          Integer(2, 100, name='min_samples_split'),
     #          Integer(1, 100, name='min_samples_leaf')]
 #
-    space  = [Real(10**-2, 10**0, "log-uniform", name='initial_lr'),
-              Real(10 ** -1, 10 ** 0, "log-uniform", name='entropy')              ]
+    space  = [Real(10**-5, 10**0, "log-uniform", name='initial_lr'),
+              Real(10 ** -20, 10 ** 0, "log-uniform", name='entropy')              ]
 
 
 
