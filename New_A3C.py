@@ -243,7 +243,7 @@ class Worker():
                     a_dist, v = sess.run([self.local_AC.policy, self.local_AC.value],
                                          feed_dict={self.local_AC.inputs: [s]})  # ,
 
-                    if  pick_largest:
+                    if  pick_largest:# or self.bool_evaluating:
                         a = np.argmax(a_dist[0])
                     else:
                         a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
@@ -310,8 +310,13 @@ class Worker():
                 self.episode_mean_values.append(np.mean(episode_values))
 
                 # Update the network using the episode buffer at the end of the episode.
-                if len(episode_buffer) != 0:
+                if len(episode_buffer) != 0 and d == True:
                     v_l, p_l, e_l, g_n, v_n = self.train(episode_buffer, sess, gamma, Penalty)
+                elif len(episode_buffer) != 0:
+                    v1 = sess.run(self.local_AC.value,
+                                  feed_dict={self.local_AC.inputs: [s]})[0, 0]  # ,
+
+                    v_l, p_l, e_l, g_n, v_n = self.train(episode_buffer, sess, gamma, v1)
                     # print("v_l",v_l,"p_l",p_l,"e_l",e_l,"g_n",g_n,"v_n",v_n)
 
                 # Periodically save gifs of episodes, model parameters, and summary statistics.
@@ -401,8 +406,9 @@ def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_
 
 
 def objective(args):
-    learning_rate = 0.001#args.initial_lr
-    entropy_factor = 0.00001#args.entropy
+
+    learning_rate = args.initial_lr
+    entropy_factor = args.entropy
     gamma = args.gamma
     max_no_improvement = args.max_no_improvement
     max_training_episodes = args.max_training_episodes
@@ -415,6 +421,7 @@ def objective(args):
     InvMin = args.invmin  # -(LT_s+1)*(2*Demand_Max)
     training = args.training
     pick_largest = args.high
+    nb_workers = args.nbworkers
     activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
     activation_nn_out = tf.nn.relu
     optimizer = tf.train.AdamOptimizer(learning_rate)
@@ -422,7 +429,7 @@ def objective(args):
     max_episode_length = 1000
 
     # discount rate for advantage estimation and reward discounting
-    nb_workers = 4
+
 
     Demand_Max = 4
     OrderFast = 5
@@ -542,6 +549,153 @@ def objective(args):
         return
 
 
+def obj_bo(list):
+    learning_rate = list[0]
+    entropy_factor = list[1]
+    gamma = 0.99#list[2]
+    max_no_improvement = 1000
+    max_training_episodes = 500000
+    depth_nn_hidden = 1#list[2]
+    depth_nn_layers_hidden = [40,20,10,10]
+    depth_nn_out = 20
+    p_len_episode_buffer = 30
+    initial_state = [3,0]
+    InvMax = 10
+    InvMin = -10  # -(LT_s+1)*(2*Demand_Max)
+    training = True
+    pick_largest = False
+
+    activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
+    activation_nn_out = tf.nn.elu
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    activations = [tf.nn.relu, tf.nn.relu]
+    max_episode_length = 1000
+
+    # discount rate for advantage estimation and reward discounting
+    nb_workers = 4
+
+    Demand_Max = 4
+    OrderFast = 5
+    OrderSlow = 5
+
+    Penalty = -1
+
+    LT_s = 1
+    LT_f = 0
+
+    h = -5
+    b = -495
+    C_f = -150
+    C_s = -100
+    cap_fast = 1
+    cap_slow = 1
+
+    max_training_episodes = 10000000
+
+    actions = CreateActions(OrderFast, OrderSlow)  # np.array([[0,0],[0,5],[5,0],[5,5]])
+    a_size = len(actions)  # Agent can move Left, Right, or Fire
+    s_size = LT_s + 1
+
+    tf.reset_default_graph()
+    if training:
+        load_model = False
+    else:
+        load_model = True
+
+    model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
+    best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
+
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+
+    global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
+    # no_improvement = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
+    trainer = optimizer  # tf.train.AdamOptimizer(learning_rate=learning_rate)
+    master_network = AC_Network(s_size, a_size, 'global', None, depth_nn_out, activation_nn_hidden, depth_nn_hidden,
+                                depth_nn_layers_hidden, activation_nn_out, entropy_factor)  # Generate global network
+    num_workers = nb_workers  # multiprocessing.cpu_count()  # Set workers to number of available CPU threads
+    workers = []
+
+    write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
+                     activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
+                     p_len_episode_buffer, max_episode_length, OrderFast, OrderSlow, LT_s, LT_f, InvMax,
+                     max_training_episodes, h, b, C_f, C_s, InvMin, Penalty, initial_state, nb_workers, cap_fast,
+                     cap_slow)
+
+    # Create worker classes
+    for i in range(num_workers):
+        if not os.path.exists(best_path + '/Train_' + str(i)):
+            os.makedirs(best_path + '/Train_' + str(i))
+        workers.append(Worker(i, s_size, a_size, trainer, model_path, best_path, global_episodes, depth_nn_out,
+                              activation_nn_hidden, depth_nn_hidden, depth_nn_layers_hidden, activation_nn_out,
+                              entropy_factor))
+    saver = tf.train.Saver(max_to_keep=5)
+    saver_best = tf.train.Saver(max_to_keep=None)
+
+    with tf.Session() as sess:
+        coord = tf.train.Coordinator()
+        if load_model == True:
+
+            print('Loading Model...')
+            ckpt = tf.train.get_checkpoint_state('./')
+            saver.restore(sess, ckpt.model_checkpoint_path)
+        else:
+            sess.run(tf.global_variables_initializer())
+
+        # This is where the asynchronous magic happens.
+        # Start the "work" process for each worker in a separate threat.
+
+        if (training):
+            worker_threads = []
+            temp_best_solutions = np.zeros(len(workers))
+            for worker in workers:
+                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best, Demand,
+                                                  LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, initial_state, Penalty,
+                                                  Demand_Max, max_training_episodes, actions, p_len_episode_buffer,
+                                                  max_no_improvement, pick_largest)
+                t = threading.Thread(target=(worker_work))
+                t.start()
+                sleep(0.5)
+                worker_threads.append(t)
+            coord.join(worker_threads)
+            for index, worker in enumerate(workers):
+                temp_best_solutions[index] = worker.best_solution
+            best_solution_found = np.max(temp_best_solutions)
+        else:
+            States = NewCreateStates(LT_f, LT_s, 10, -10, OrderFast, OrderSlow)
+            print(States)
+            policy_fast = []
+            policy_slow = []
+            A3C_policy = []
+            for index, state in enumerate(States):
+                prob_vector = sess.run(workers[0].local_AC.policy, feed_dict={workers[0].local_AC.inputs: [state]})[0]
+                A3C_policy.append(prob_vector)
+                # print(state,prob_vector,np.sum(prob_vector))
+                action_prob_fast = np.zeros(OrderFast + 1)
+                action_prob_slow = np.zeros(OrderSlow + 1)
+
+                for i in range(len(actions)):
+                    action_prob_fast[actions[i][0]] += prob_vector[i]
+                    action_prob_slow[actions[i][1]] += prob_vector[i]
+                print(state, np.argmax(action_prob_fast), np.argmax(action_prob_slow), "FAST", action_prob_fast, "SLOW",
+                      action_prob_slow)
+                policy_fast.append(deepcopy(action_prob_fast))
+                policy_slow.append(deepcopy(action_prob_slow))
+
+            np.savetxt('A3C_policy.csv', A3C_policy, delimiter=';')
+            with open('cost.csv', 'w') as f:
+                for index, i in enumerate(States):
+                    for j in States[index]:
+                        f.write(str(j) + ';')
+                    f.write(';')
+                    for j in policy_fast[index]:
+                        f.write(str(j) + ';')
+                    f.write(';')
+                    for j in policy_slow[index]:
+                        f.write(str(j) + ';')
+                    f.write(';')
+                    f.write('\n')
+        return -best_solution_found
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -550,7 +704,7 @@ if __name__ == '__main__':
                         help="Initial value for the learning rate. If a value of 0 is specified, the learning rate will be sampled from a LogUniform(10**-4, 10**-2) distribution. Default = 0.001",
                         dest="initial_lr")
 
-    parser.add_argument('--entropy', default=1, type=float,
+    parser.add_argument('--entropy', default=-0, type=float,
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
 
@@ -574,7 +728,7 @@ if __name__ == '__main__':
                         dest="depth_nn_layers_hidden")
 
 
-    parser.add_argument('--p_len_episode_buffer', default=50, type=float,
+    parser.add_argument('--p_len_episode_buffer', default=20, type=float,
                         help="p_len_episode_buffer. Default = 50",
                         dest="p_len_episode_buffer")
 
@@ -597,7 +751,9 @@ if __name__ == '__main__':
     parser.add_argument('--high', default= False, type=float,
                         help="Pick largest likelihood. Default = False",
                         dest="high")
-
+    parser.add_argument('--nbworkers', default= 4, type=float,
+                        help="Number of A3C workers. Default = 4",
+                        dest="nbworkers")
     args = parser.parse_args()
 
     objective(args)

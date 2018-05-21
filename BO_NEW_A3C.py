@@ -60,22 +60,22 @@ activations = [tf.nn.relu,tf.nn.relu]
 
 
 max_episode_length = 1000
-max_no_improvement = 5
+max_no_improvement = 1000
  # discount rate for advantage estimation and reward discounting
 nb_workers = 4
-OrderFast=6
+OrderFast=10
 OrderSlow=10
 InvMin=-10
 Penalty = -1
 
 #CASE PARAMETERS
-LT_s=2
-LT_f=1
-h=-2
-b=-38
+LT_s=1
+LT_f=0
+h=-5
+b=-495
 p=-0
-C_f=-20
-C_s=-10
+C_f=-150
+C_s=-100
 cap_fast = 1
 cap_slow = 1
 
@@ -494,11 +494,11 @@ def objective(dec_vect):
             for index,worker in enumerate(workers):
                 temp_best_solutions[index] = worker.best_solution
             best_solution_found = np.min(temp_best_solutions)
-            return best_solution_found
+            return -best_solution_found
 
 if __name__== "__main__":
     BO = BayesianOptimization(f=objective, domain=dec_ranges)
-    BO.run_optimization(max_iter=100, verbosity=True, report_file='./report.txt')
+    BO.run_optimization(max_iter=25, verbosity=True, report_file='./report.txt')
     BO.save_evaluations('./evaluations.txt')
     BO.plot_acquisition()
     BO.plot_convergence()
