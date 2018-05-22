@@ -35,7 +35,7 @@ def main(args):
     if not os.path.exists(log_path):
         os.makedirs(log_path)
 
-    res_gp = gp_minimize(New_A3C.obj_bo, space, n_calls=args.iterations, random_state=0,n_jobs=-1)
+    res_gp = gp_minimize(New_A3C.obj_bo, space, n_calls=int(args.iterations), random_state=0,n_jobs=-1)
 
 
     print("Best score=%f" % res_gp.fun)
