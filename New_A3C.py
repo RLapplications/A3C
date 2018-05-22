@@ -24,24 +24,26 @@ def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min):
     done = False
     s1 = deepcopy(s)
     reward = 0
+    s1[0] += - demand
     s1[LT_f] += a[0]
     s1[LT_s] += a[1]
     reward += a[0] * C_f + a[1] * C_s
-    if s1[0] >= 0:
-        reward += s1[0] * h
-    else:
-        reward += -s1[0] * b
-    s1[0] += - demand
+
     s1[0] += s1[1]
     for i in range(1, LT_s):
         s1[i] = s1[i + 1]
     s1[LT_s] = 0
     if (s1[0] > Inv_Max):
         s1[0] = Inv_Max
-        done = True
+        #done = True
     if s1[0] < Inv_Min:
         s1[0] = Inv_Min
-        done = True
+        #done = True
+    if s1[0] >= 0:
+        reward += s1[0] * h
+    else:
+        reward += -s1[0] * b
+
     return reward / 1000000, s1, done
 
 
@@ -104,7 +106,7 @@ class AC_Network():
                 self.state_out = slim.fully_connected(inputs=self.hidden3, num_outputs=depth_nn_out,
                                                       activation_fn=activation_nn_out)
             if depth_nn_hidden >= 4:
-                self.hidden4 = slim.fully_connected(inputs=self.hidden4, num_outputs=depth_nn_layers_hidden[3],
+                self.hidden4 = slim.fully_connected(inputs=self.hidden3, num_outputs=depth_nn_layers_hidden[3],
                                                     activation_fn=activation_nn_hidden[3])
                 self.state_out = slim.fully_connected(inputs=self.hidden4, num_outputs=depth_nn_out,
                                                       activation_fn=activation_nn_out)
@@ -210,7 +212,7 @@ class Worker():
             feed_dict=feed_dict)
         return v_l / len(rollout), p_l / len(rollout), e_l / len(rollout), g_n, v_n
 
-    def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest):
+    def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest,verbose):
         # best_solution = -99999999999
         episode_count = sess.run(self.global_episodes)
         total_steps = 0
@@ -243,7 +245,7 @@ class Worker():
                     a_dist, v = sess.run([self.local_AC.policy, self.local_AC.value],
                                          feed_dict={self.local_AC.inputs: [s]})  # ,
 
-                    if  pick_largest:# or self.bool_evaluating:
+                    if  pick_largest or self.bool_evaluating:
                         a = np.argmax(a_dist[0])
                     else:
                         a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
@@ -294,7 +296,7 @@ class Worker():
                     #if episode_step_count >= max_episode_length - 1:
                     #    break
                 if self.bool_evaluating == True:
-                    print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
+                    if(verbose): print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
                     if (episode_reward / episode_step_count > self.best_solution and episode_step_count == max_episode_length - 1):
                         self.best_solution = episode_reward / episode_step_count
                         f= open(self.best_path +"/best_solution%i.txt"%self.number,"w")
@@ -422,6 +424,7 @@ def objective(args):
     training = args.training
     pick_largest = args.high
     nb_workers = args.nbworkers
+    verbose = args.verbose
     activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
     activation_nn_out = tf.nn.relu
     optimizer = tf.train.AdamOptimizer(learning_rate)
@@ -504,7 +507,7 @@ def objective(args):
             worker_threads = []
             temp_best_solutions = np.zeros(len(workers))
             for worker in workers:
-                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest)
+                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest,verbose)
                 t = threading.Thread(target=(worker_work))
                 t.start()
                 sleep(0.5)
@@ -553,22 +556,23 @@ def obj_bo(list):
     learning_rate = list[0]
     entropy_factor = list[1]
     gamma = 0.99#list[2]
-    max_no_improvement = 2500
+    max_no_improvement = 2000
     max_training_episodes = 500000
-    depth_nn_hidden = 1#list[2]
-    depth_nn_layers_hidden = [40,20,10,10]
-    depth_nn_out = 20
-    p_len_episode_buffer = 30
+    depth_nn_hidden = list[2]
+    depth_nn_layers_hidden = [list[3],list[4],list[5],list[6]]
+    depth_nn_out = list[7]
+    p_len_episode_buffer = list[8]#30
     initial_state = [3,0]
-    InvMax = 10
-    InvMin = -10  # -(LT_s+1)*(2*Demand_Max)
+    InvMax = list[9]#10
+    InvMin = list[10]#-10  # -(LT_s+1)*(2*Demand_Max)
     training = True
     pick_largest = False
-
-    activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
-    activation_nn_out = tf.nn.relu
+    verbose = False
+    activations = [tf.nn.relu, tf.nn.sigmoid,tf.nn.elu]
+    activation_nn_hidden = [activations[list[11]], activations[list[12]], activations[list[13]], activations[list[14]]]
+    activation_nn_out = activations[list[15]]
     optimizer = tf.train.AdamOptimizer(learning_rate)
-    activations = [tf.nn.relu, tf.nn.relu]
+
     max_episode_length = 1000
 
     # discount rate for advantage estimation and reward discounting
@@ -652,7 +656,7 @@ def obj_bo(list):
                 worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best, Demand,
                                                   LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, initial_state, Penalty,
                                                   Demand_Max, max_training_episodes, actions, p_len_episode_buffer,
-                                                  max_no_improvement, pick_largest)
+                                                  max_no_improvement, pick_largest,verbose)
                 t = threading.Thread(target=(worker_work))
                 t.start()
                 sleep(0.5)
@@ -704,7 +708,7 @@ if __name__ == '__main__':
                         help="Initial value for the learning rate. If a value of 0 is specified, the learning rate will be sampled from a LogUniform(10**-4, 10**-2) distribution. Default = 0.001",
                         dest="initial_lr")
 
-    parser.add_argument('--entropy', default=-0, type=float,
+    parser.add_argument('--entropy', default=0.00001, type=float,
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
 
@@ -728,7 +732,7 @@ if __name__ == '__main__':
                         dest="depth_nn_layers_hidden")
 
 
-    parser.add_argument('--p_len_episode_buffer', default=20, type=float,
+    parser.add_argument('--p_len_episode_buffer', default=3, type=float,
                         help="p_len_episode_buffer. Default = 50",
                         dest="p_len_episode_buffer")
 
@@ -754,6 +758,9 @@ if __name__ == '__main__':
     parser.add_argument('--nbworkers', default= 4, type=float,
                         help="Number of A3C workers. Default = 4",
                         dest="nbworkers")
+    parser.add_argument('--verbose', default= False, type=str,
+                        help="Print evaluation results. Default = False",
+                        dest="verbose")
     args = parser.parse_args()
 
     objective(args)
