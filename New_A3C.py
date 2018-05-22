@@ -440,7 +440,7 @@ def objective(args):
 
     Penalty = -1
 
-    LT_s = 2
+    LT_s = 3
     LT_f = 0
 
 
