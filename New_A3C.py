@@ -35,10 +35,10 @@ def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min):
     s1[LT_s] = 0
     if (s1[0] > Inv_Max):
         s1[0] = Inv_Max
-        #done = True
+        done = True
     if s1[0] < Inv_Min:
         s1[0] = Inv_Min
-        #done = True
+        done = True
     if s1[0] >= 0:
         reward += s1[0] * h
     else:
@@ -440,7 +440,7 @@ def objective(args):
 
     Penalty = -1
 
-    LT_s = 4
+    LT_s = 1
     LT_f = 0
 
 
