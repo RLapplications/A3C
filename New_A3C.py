@@ -558,19 +558,19 @@ def obj_bo(list):
     gamma = 0.99#list[2]
     max_no_improvement = 2000
     max_training_episodes = 500000
-    depth_nn_hidden = list[2]
-    depth_nn_layers_hidden = [list[3],list[4],list[5],list[6]]
-    depth_nn_out = list[7]
-    p_len_episode_buffer = list[8]#30
+    depth_nn_hidden = 3#list[2]
+    depth_nn_layers_hidden = [150,100,40,10]#[list[3],list[4],list[5],list[6]]
+    depth_nn_out = 20#list[7]
+    p_len_episode_buffer = 30#list[8]#30
     initial_state = [3,0]
-    InvMax = list[9]#10
-    InvMin = list[10]#-10  # -(LT_s+1)*(2*Demand_Max)
+    InvMax = 20#list[9]#10
+    InvMin = -20#list[10]#-10  # -(LT_s+1)*(2*Demand_Max)
     training = True
     pick_largest = False
     verbose = False
     activations = [tf.nn.relu, tf.nn.sigmoid,tf.nn.elu]
-    activation_nn_hidden = [activations[list[11]], activations[list[12]], activations[list[13]], activations[list[14]]]
-    activation_nn_out = activations[list[15]]
+    activation_nn_hidden = [tf.nn.relu,tf.nn.relu,tf.nn.relu,tf.nn.relu]#[activations[list[11]], activations[list[12]], activations[list[13]], activations[list[14]]]
+    activation_nn_out = tf.nn.relu#activations[list[15]]
     optimizer = tf.train.AdamOptimizer(learning_rate)
 
     max_episode_length = 1000
