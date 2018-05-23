@@ -586,7 +586,7 @@ def obj_bo(list):
     depth_nn_out = list[7]
     p_len_episode_buffer = list[8]#30
     initial_state = [3]
-    LT_s = 4
+    LT_s = 3
     initial_state = initial_state * LT_s
     initial_state.append(0)
     InvMax = list[9]#10
