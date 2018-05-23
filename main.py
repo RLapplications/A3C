@@ -14,23 +14,22 @@ import argparse
 
 
 def main(args):
-    space  = [Real(10**-5, 10**0, "log-uniform", name='initial_lr'),
-              Real(10**-20,10**0, "log-uniform", name='entropy')]\
-        #,
-             #Categorical([1,2,3,4], name='depth_nn_hidden'),
-             #Categorical([1, 70, 150], name='depth_nn_layers_hidden[0]'),
-             #Categorical([1, 50, 70],  name='depth_nn_layers_hidden[1]'),
-             #Categorical([1, 40, 20],  name='depth_nn_layers_hidden[2]'),
-             #Categorical([1, 10, 20],  name='depth_nn_layers_hidden[3]'),
-             #Categorical([1, 5, 8], name='depth_nn_out'),
-             #Categorical([2, 20, 50],  name='p_len_episode_buffer'),
-             #Categorical([10, 150], name='InvMax'),
-             #Categorical([-10, -100],  name='invMin'),
-             #Categorical([0, 1, 2],  name='activation_nn_hidden[0]'),
-             #Categorical([0,1,2],   name='activation_nn_hidden[1]'),
-             #Categorical([0,1,2],   name='activation_nn_hidden[2]'),
-             #Categorical([0,1,2],  name='activation_nn_hidden[3]'),
-             #Categorical([0,1,2],   name='activation_nn_out')]
+    space  = [Real(10**-7, 10**0, "log-uniform", name='initial_lr'),
+              Real(10**-20,10**0, "log-uniform", name='entropy'),
+              Categorical([1,2,3,4], name='depth_nn_hidden'),
+              Categorical([1, 7, 70, 150], name='depth_nn_layers_hidden[0]'),
+              Categorical([1, 5, 50, 70],  name='depth_nn_layers_hidden[1]'),
+              Categorical([1, 4, 40, 20],  name='depth_nn_layers_hidden[2]'),
+              Categorical([1, 10, 20],  name='depth_nn_layers_hidden[3]'),
+              Categorical([1, 5, 8], name='depth_nn_out'),
+              Categorical([3, 10, 50],  name='p_len_episode_buffer'),
+              Categorical([10, 40], name='InvMax'),
+              Categorical([-40, -10],  name='invMin'),
+              Categorical([0, 1, 2],  name='activation_nn_hidden[0]'),
+              Categorical([0,1,2],   name='activation_nn_hidden[1]'),
+              Categorical([0,1,2],   name='activation_nn_hidden[2]'),
+              Categorical([0,1,2],  name='activation_nn_hidden[3]'),
+              Categorical([0,1,2],   name='activation_nn_out')]
 
     log_path = 'BOLogs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S"))
     if not os.path.exists(log_path):
@@ -58,7 +57,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-iterations', '--iterations', default=100, type=float,
+    parser.add_argument('-iterations', '--iterations', default=50, type=float,
                         help="Number of hyperparameter sets tested",
                         dest="iterations")
 
