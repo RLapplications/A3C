@@ -28,7 +28,10 @@ def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min):
     s1[LT_f] += a[0]
     s1[LT_s] += a[1]
     reward += a[0] * C_f + a[1] * C_s
-
+    if s1[0] >= 0:
+        reward += s1[0] * h
+    else:
+        reward += -s1[0] * b
     s1[0] += s1[1]
     for i in range(1, LT_s):
         s1[i] = s1[i + 1]
@@ -39,11 +42,8 @@ def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min):
     if s1[0] < Inv_Min:
         s1[0] = Inv_Min
         done = True
-    if s1[0] >= 0:
-        reward += s1[0] * h
-    else:
-        reward += -s1[0] * b
-    return -reward / 1000000, s1, done
+
+    return reward / 1000000, s1, done
 
 
 
@@ -421,10 +421,21 @@ def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_
 
 
 
-
-
 def objective(args):
+    Demand_Max = args.Demand_Max
+    OrderFast = args.OrderFast
+    OrderSlow = args.OrderSlow
+    Penalty = args.penalty
+    LT_f = args.LT_f
+    LT_s = args.LT_s
+    h = args.h
+    b = args.b
+    C_f = args.C_f
+    C_s = args.C_s
+    cap_fast = args.cap_fast
+    cap_slow = args.cap_slow
 
+    max_training_episodes = args.max_training_episodes
     learning_rate = args.initial_lr
     entropy_factor = args.entropy
     gamma = args.gamma
@@ -435,7 +446,6 @@ def objective(args):
     depth_nn_out = args.depth_nn_out
     p_len_episode_buffer = args.p_len_episode_buffer
     initial_state = args.initial_state
-    LT_s = 4
     initial_state=initial_state*LT_s
     initial_state.append(0)
 
@@ -456,25 +466,6 @@ def objective(args):
     # discount rate for advantage estimation and reward discounting
 
 
-    Demand_Max = 4
-    OrderFast = 5
-    OrderSlow = 5
-
-    Penalty = 1
-
-
-    LT_f = 0
-
-
-    h = -5
-    b = -495
-    C_f = -150
-    C_s = -100
-    cap_fast = 1
-    cap_slow = 1
-
-
-    max_training_episodes = 10000000
 
     actions = CreateActions(OrderFast, OrderSlow)  # np.array([[0,0],[0,5],[5,0],[5,5]])
     a_size = len(actions)  # Agent can move Left, Right, or Fire
@@ -740,7 +731,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
 
-    parser.add_argument('--max_no_improvement', default=50000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
 
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
@@ -795,6 +786,43 @@ if __name__ == '__main__':
     parser.add_argument('--entropy_min', default= 1, type=float,
                         help="entropy_min. Default = 0",
                         dest="entropy_min")
+    parser.add_argument('-Demand_Max', '--Demand_Max', default=4, type=float,
+                        help="Demand_Max. Default = 4",
+                        dest="Demand_Max")
+    parser.add_argument('--OrderFast', default=5, type=float,
+                        help="OrderFast. Default = 5",
+                        dest="OrderFast")
+    parser.add_argument('--OrderSlow', default=5, type=float, help="OrderSlow. Default = 5", dest="OrderSlow")
+    parser.add_argument('--LT_s', default=1, type=float, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_f', default=0, type=float, help="LT_f. Default = 0",
+                        dest="LT_f")
+    parser.add_argument('--Inv_Max', default=10, type=float,
+                        help="Inv_Max. Default = 10",
+                        dest="Inv_Max")
+    parser.add_argument('--Inv_Min', default=-10, type=float,
+                        help="Inv_Min. Default = -10",
+                        dest="Inv_Min")
+    parser.add_argument('--cap_slow', default=1, type=float,
+                        help="cap_slow. Default = 1",
+                        dest="cap_slow")
+    parser.add_argument('--cap_fast', default=1, type=float,
+                        help="cap_fast. Default = 1",
+                        dest="cap_fast")
+    parser.add_argument('--C_s', default=100, type=float,
+                        help="C_s. Default = 100",
+                        dest="C_s")
+    parser.add_argument('--C_f', default=150, type=float,
+                        help="C_f. Default = 150",
+                        dest="C_f")
+    parser.add_argument('--h', default=5, type=float,
+                        help="h. Default = 5",
+                        dest="h")
+    parser.add_argument('--b', default=495, type=str,
+                        help="b. Default = 495",
+                        dest="b")
+    parser.add_argument('--penalty', default=1, type=str,
+                        help="penalty. Default = 1",
+                        dest="penalty")
     args = parser.parse_args()
 
     objective(args)
