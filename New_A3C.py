@@ -793,8 +793,8 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=5, type=float, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=1, type=float, help="LT_s. Default = 1", dest="LT_s")
-    parser.add_argument('--LT_f', default=0, type=float, help="LT_f. Default = 0",
+    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--Inv_Max', default=10, type=float,
                         help="Inv_Max. Default = 10",
