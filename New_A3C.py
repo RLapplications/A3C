@@ -433,7 +433,7 @@ def objective(args):
     depth_nn_hidden = args.depth_nn_hidden
     depth_nn_layers_hidden = args.depth_nn_layers_hidden
     depth_nn_out = args.depth_nn_out
-    p_len_episode_buffer = args.tmux itertoolsp_len_episode_buffer
+    p_len_episode_buffer = args.p_len_episode_buffer
     initial_state = args.initial_state
     LT_s = 2
     initial_state=initial_state*LT_s
