@@ -730,7 +730,7 @@ def obj_bo(list):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-lr', '--initial_lr', default=0.001, type=float,
+    parser.add_argument('-lr', '--initial_lr', default=0.0001, type=float,
                         help="Initial value for the learning rate. If a value of 0 is specified, the learning rate will be sampled from a LogUniform(10**-4, 10**-2) distribution. Default = 0.001",
                         dest="initial_lr")
 
@@ -745,15 +745,15 @@ if __name__ == '__main__':
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
 
-    parser.add_argument('--depth_nn_hidden', default=1, type=float,
+    parser.add_argument('--depth_nn_hidden', default=3, type=float,
                         help="depth_nn_hidden. Default = 3",
                         dest="depth_nn_hidden")
 
-    parser.add_argument('--depth_nn_out', default=4, type=float,
+    parser.add_argument('--depth_nn_out', default=20, type=float,
                         help="depth_nn_out. Default = 20",
                         dest="depth_nn_out")
 
-    parser.add_argument('--depth_nn_layers_hidden', default=[7,120,80,40], type=float,
+    parser.add_argument('--depth_nn_layers_hidden', default=[150,120,80,40], type=float,
                         help="depth_nn_layers_hidden. Default = [40,20,10,10]",
                         dest="depth_nn_layers_hidden")
 
