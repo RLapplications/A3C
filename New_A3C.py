@@ -731,7 +731,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
 
-    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=20000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
 
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
