@@ -577,7 +577,7 @@ def obj_bo(list):
     depth_nn_out = list[7]
     p_len_episode_buffer = list[8]#30
     initial_state = [3]
-    LT_s = 3
+    LT_s = 4
     initial_state = initial_state * LT_s
     initial_state.append(0)
     InvMax = list[9]#10
@@ -588,6 +588,7 @@ def obj_bo(list):
     activations = [tf.nn.relu, tf.nn.sigmoid,tf.nn.elu]
     activation_nn_hidden = [activations[list[11]], activations[list[12]], activations[list[13]], activations[list[14]]]
     activation_nn_out = activations[list[15]]
+    print('CHECK',list[16])
     optimizer = tf.train.AdamOptimizer(learning_rate)
     verbose = True
     entropy_decay = 0.9
@@ -720,52 +721,37 @@ def obj_bo(list):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
     parser.add_argument('-lr', '--initial_lr', default=0.0001, type=float,
                         help="Initial value for the learning rate. If a value of 0 is specified, the learning rate will be sampled from a LogUniform(10**-4, 10**-2) distribution. Default = 0.001",
                         dest="initial_lr")
-
-    parser.add_argument('--entropy', default=0.000005, type=float,
+    parser.add_argument('--entropy', default=0.00001, type=float,
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
-
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-
     parser.add_argument('--max_no_improvement', default=20000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
-
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
-
     parser.add_argument('--depth_nn_hidden', default=3, type=float,
                         help="depth_nn_hidden. Default = 3",
                         dest="depth_nn_hidden")
-
     parser.add_argument('--depth_nn_out', default=20, type=float,
                         help="depth_nn_out. Default = 20",
                         dest="depth_nn_out")
-
     parser.add_argument('--depth_nn_layers_hidden', default=[150,120,80,40], type=float,
                         help="depth_nn_layers_hidden. Default = [40,20,10,10]",
                         dest="depth_nn_layers_hidden")
-
-
-    parser.add_argument('--p_len_episode_buffer', default=3, type=float,
-                        help="p_len_episode_buffer. Default = 50",
+    parser.add_argument('--p_len_episode_buffer', default=20, type=float,
+                        help="p_len_episode_buffer. Default = 20",
                         dest="p_len_episode_buffer")
-
     parser.add_argument('--initial_state', default=[3], type=float,
                         help="initial_state. Default = [3,0]",
                         dest="initial_state")
-
-
     parser.add_argument('--invmax', default=40, type=float,
                         help="invmax. Default = 150",
                         dest="invmax")
-
     parser.add_argument('--invmin', default=-40 , type=float,
                         help="invmin. Default = -15",
                         dest="invmin")
-
     parser.add_argument('--training', default= True, type=str,
                         help="training. Default = True",
                         dest="training")
@@ -778,11 +764,9 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', default= True, type=str,
                         help="Print evaluation results. Default = False",
                         dest="verbose")
-
     parser.add_argument('--entropy_decay', default= 0.9, type=float,
                         help="Entropy_decay. Default = 0.95",
                         dest="entropy_decay")
-
     parser.add_argument('--entropy_min', default= 1, type=float,
                         help="entropy_min. Default = 0",
                         dest="entropy_min")
@@ -793,15 +777,9 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=5, type=float, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
-    parser.add_argument('--Inv_Max', default=10, type=float,
-                        help="Inv_Max. Default = 10",
-                        dest="Inv_Max")
-    parser.add_argument('--Inv_Min', default=-10, type=float,
-                        help="Inv_Min. Default = -10",
-                        dest="Inv_Min")
     parser.add_argument('--cap_slow', default=1, type=float,
                         help="cap_slow. Default = 1",
                         dest="cap_slow")
@@ -823,6 +801,11 @@ if __name__ == '__main__':
     parser.add_argument('--penalty', default=1, type=str,
                         help="penalty. Default = 1",
                         dest="penalty")
+    parser.add_argument('--max_time', default=120, type=str,
+                        help="max_time. Default = 6000",
+                        dest="max_time")
     args = parser.parse_args()
 
-    objective(args)
+    for i in [0.00001,0.000001,0.0000001]:
+        args.entropy = i
+        objective(args)

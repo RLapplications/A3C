@@ -29,7 +29,8 @@ def main(args):
               Categorical([0,1,2],   name='activation_nn_hidden[1]'),
               Categorical([0,1,2],   name='activation_nn_hidden[2]'),
               Categorical([0,1,2],  name='activation_nn_hidden[3]'),
-              Categorical([0,1,2],   name='activation_nn_out')]
+              Categorical([0,1,2],   name='activation_nn_out'),
+              [5]]
 
     log_path = 'BOLogs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S"))
     if not os.path.exists(log_path):
