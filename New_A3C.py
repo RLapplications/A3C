@@ -13,6 +13,7 @@ import csv
 import time
 import random
 import argparse
+import math
 Demand = []
 
 with open("./Demand100000.csv") as csvfile:
@@ -20,14 +21,14 @@ with open("./Demand100000.csv") as csvfile:
     for row in reader:
         Demand.append(int(row[0]))
 
-def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min):
+def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min, cap_fast, cap_slow):
     done = False
     s1 = deepcopy(s)
     reward = 0
     s1[0] += - demand
     s1[LT_f] += a[0]
     s1[LT_s] += a[1]
-    reward += a[0] * C_f + a[1] * C_s
+    reward += math.ceil(a[0]/cap_fast) * C_f +math.ceil(a[1]/cap_slow) * C_s
     if s1[0] >= 0:
         reward += s1[0] * h
     else:
@@ -213,7 +214,7 @@ class Worker():
         return v_l / len(rollout), p_l / len(rollout), e_l / len(rollout), g_n, v_n
 
     def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax,
-             InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min):
+             InvMin,cap_fast, cap_slow,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min):
         episode_count = sess.run(self.global_episodes)
 
         print("Starting worker " + str(self.number))
@@ -256,12 +257,12 @@ class Worker():
                                 a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
 
                             if self.bool_evaluating == True:
-                                r,s1,d = new_transition(s, actions[a], Demand[episode_step_count*(i+1)], LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin)
+                                r,s1,d = new_transition(s, actions[a], Demand[episode_step_count*(i+1)], LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow)
                                 d = False
 
                             else:
                                 r, s1, d = new_transition(s, actions[a], random.randint(0, Demand_Max), LT_s, LT_f, h, b, C_s,
-                                                          C_f, InvMax, InvMin)
+                                                          C_f, InvMax, InvMin, cap_fast, cap_slow)
                                 d = False
 
                             if self.bool_evaluating == True:
@@ -520,7 +521,7 @@ def objective(args):
             worker_threads = []
             temp_best_solutions = np.zeros(len(workers))
             for worker in workers:
-                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min)
+                worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow,initial_state,Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min)
                 t = threading.Thread(target=(worker_work))
                 t.start()
                 sleep(0.5)
@@ -672,7 +673,7 @@ def obj_bo(list):
             temp_best_solutions = np.zeros(len(workers))
             for worker in workers:
                 worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best, Demand,
-                                                  LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, initial_state, Penalty,
+                                                  LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow, initial_state, Penalty,
                                                   Demand_Max, max_training_episodes, actions, p_len_episode_buffer,
                                                   max_no_improvement, pick_largest,verbose,entropy_decay,entropy_min)
                 t = threading.Thread(target=(worker_work))
@@ -780,10 +781,10 @@ if __name__ == '__main__':
     parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
-    parser.add_argument('--cap_slow', default=1, type=float,
+    parser.add_argument('--cap_slow', default=2, type=float,
                         help="cap_slow. Default = 1",
                         dest="cap_slow")
-    parser.add_argument('--cap_fast', default=1, type=float,
+    parser.add_argument('--cap_fast', default=2, type=float,
                         help="cap_fast. Default = 1",
                         dest="cap_fast")
     parser.add_argument('--C_s', default=100, type=float,
@@ -806,6 +807,4 @@ if __name__ == '__main__':
                         dest="max_time")
     args = parser.parse_args()
 
-    for i in [0.00001,0.000001,0.0000001]:
-        args.entropy = i
-        objective(args)
+    objective(args)
