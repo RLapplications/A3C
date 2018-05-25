@@ -571,14 +571,14 @@ def obj_bo(list):
     learning_rate = list[0]
     entropy_factor = list[1]
     gamma = list[2]
-    max_no_improvement = 250
+    max_no_improvement = list[16]
     max_training_episodes = 500000
     depth_nn_hidden = list[2]
     depth_nn_layers_hidden = [list[3],list[4],list[5],list[6]]
     depth_nn_out = list[7]
     p_len_episode_buffer = list[8]#30
     initial_state = [3]
-    LT_s = 4
+    LT_s = list[17]
     initial_state = initial_state * LT_s
     initial_state.append(0)
     InvMax = list[9]#10
@@ -589,7 +589,6 @@ def obj_bo(list):
     activations = [tf.nn.relu, tf.nn.sigmoid,tf.nn.elu]
     activation_nn_hidden = [activations[list[11]], activations[list[12]], activations[list[13]], activations[list[14]]]
     activation_nn_out = activations[list[15]]
-    print('CHECK',list[16])
     optimizer = tf.train.AdamOptimizer(learning_rate)
     verbose = True
     entropy_decay = 0.9
@@ -611,8 +610,9 @@ def obj_bo(list):
     b = -495
     C_f = -150
     C_s = -100
-    cap_fast = 1
-    cap_slow = 1
+    cap_slow = list[19]
+    cap_fast = list[18]
+
 
 
     actions = CreateActions(OrderFast, OrderSlow)  # np.array([[0,0],[0,5],[5,0],[5,5]])
@@ -729,7 +729,7 @@ if __name__ == '__main__':
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-    parser.add_argument('--max_no_improvement', default=20000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=2500, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
     parser.add_argument('--depth_nn_hidden', default=3, type=float,
