@@ -305,7 +305,7 @@ class Worker():
 
                 if self.bool_evaluating == True:
                     #if(verbose): print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
-                    if (verbose): print("EVALUATION",mean_performance)
+                    if (verbose): print("EVALUATION",mean_performance, self.best_solution)
                     if (mean_performance < self.best_solution):# and episode_step_count == max_episode_length - 1):
                         self.best_solution = mean_performance#episode_reward / episode_step_count
                         f= open(self.best_path +"/best_solution%i.txt"%self.number,"w")
