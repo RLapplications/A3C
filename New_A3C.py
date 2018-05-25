@@ -781,10 +781,10 @@ if __name__ == '__main__':
     parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
-    parser.add_argument('--cap_slow', default=2, type=float,
+    parser.add_argument('--cap_slow', default=1, type=float,
                         help="cap_slow. Default = 1",
                         dest="cap_slow")
-    parser.add_argument('--cap_fast', default=2, type=float,
+    parser.add_argument('--cap_fast', default=1, type=float,
                         help="cap_fast. Default = 1",
                         dest="cap_fast")
     parser.add_argument('--C_s', default=100, type=float,
