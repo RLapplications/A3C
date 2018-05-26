@@ -66,7 +66,7 @@ if __name__ == '__main__':
                         dest="iterations")
     parser.add_argument('--max_no_improvement', default=2500, type=float, help="max_no_improvement. Default = 5000",
                         dest="max_no_improvement")
-    parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--cap_slow', default=1, type=float,

@@ -602,14 +602,14 @@ def obj_bo(list):
     OrderFast = 5
     OrderSlow = 5
 
-    Penalty = -1
+    Penalty = 1
 
     LT_f = 0
 
-    h = -5
-    b = -495
-    C_f = -150
-    C_s = -100
+    h = 5
+    b = 495
+    C_f = 150
+    C_s = 100
     cap_slow = list[19]
     cap_fast = list[18]
 
