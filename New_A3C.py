@@ -462,7 +462,7 @@ def objective(args):
     activation_nn_out = tf.nn.relu
     optimizer = tf.train.AdamOptimizer(learning_rate)
     activations = [tf.nn.relu, tf.nn.relu]
-    max_episode_length = 100
+    max_episode_length = args.max_episode_length#100
 
     # discount rate for advantage estimation and reward discounting
 
@@ -723,16 +723,16 @@ def obj_bo(list):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-lr', '--initial_lr', default=0.0001, type=float,
-                        help="Initial value for the learning rate. If a value of 0 is specified, the learning rate will be sampled from a LogUniform(10**-4, 10**-2) distribution. Default = 0.001",
+                        help="Initial value for the learning rate.  Default = 0.001",
                         dest="initial_lr")
-    parser.add_argument('--entropy', default=0.00001, type=float,
+    parser.add_argument('--entropy', default=0.000001, type=float,
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-    parser.add_argument('--max_no_improvement', default=2500, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=25000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
-    parser.add_argument('--depth_nn_hidden', default=3, type=float,
+    parser.add_argument('--depth_nn_hidden', default=4, type=float,
                         help="depth_nn_hidden. Default = 3",
                         dest="depth_nn_hidden")
     parser.add_argument('--depth_nn_out', default=20, type=float,
@@ -747,10 +747,10 @@ if __name__ == '__main__':
     parser.add_argument('--initial_state', default=[3], type=float,
                         help="initial_state. Default = [3,0]",
                         dest="initial_state")
-    parser.add_argument('--invmax', default=40, type=float,
+    parser.add_argument('--invmax', default=15, type=float,
                         help="invmax. Default = 150",
                         dest="invmax")
-    parser.add_argument('--invmin', default=-40 , type=float,
+    parser.add_argument('--invmin', default=-15 , type=float,
                         help="invmin. Default = -15",
                         dest="invmin")
     parser.add_argument('--training', default= True, type=str,
@@ -778,7 +778,7 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--cap_slow', default=1, type=float,
@@ -803,8 +803,12 @@ if __name__ == '__main__':
                         help="penalty. Default = 1",
                         dest="penalty")
     parser.add_argument('--max_time', default=120, type=str,
-                        help="max_time. Default = 6000",
+                        help="max_time. Default = 120",
                         dest="max_time")
+    parser.add_argument('--max_episode_length', default=1000, type=str,
+                        help="max_episode_length. Default = 100",
+                        dest="max_episode_length")
+
     args = parser.parse_args()
 
     objective(args)
