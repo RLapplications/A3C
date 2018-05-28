@@ -738,7 +738,7 @@ if __name__ == '__main__':
     parser.add_argument('--depth_nn_out', default=20, type=float,
                         help="depth_nn_out. Default = 20",
                         dest="depth_nn_out")
-    parser.add_argument('--depth_nn_layers_hidden', default=[150,120,80,40], type=float,
+    parser.add_argument('--depth_nn_layers_hidden', default=[150,120,80,40], type=list,
                         help="depth_nn_layers_hidden. Default = [40,20,10,10]",
                         dest="depth_nn_layers_hidden")
     parser.add_argument('--p_len_episode_buffer', default=20, type=float,
