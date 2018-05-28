@@ -732,7 +732,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_no_improvement', default=25000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
-    parser.add_argument('--depth_nn_hidden', default=4, type=float,
+    parser.add_argument('--depth_nn_hidden', default=3, type=float,
                         help="depth_nn_hidden. Default = 3",
                         dest="depth_nn_hidden")
     parser.add_argument('--depth_nn_out', default=20, type=float,
@@ -747,13 +747,13 @@ if __name__ == '__main__':
     parser.add_argument('--initial_state', default=[3], type=float,
                         help="initial_state. Default = [3,0]",
                         dest="initial_state")
-    parser.add_argument('--invmax', default=15, type=float,
+    parser.add_argument('--invmax', default=40, type=float,
                         help="invmax. Default = 150",
                         dest="invmax")
-    parser.add_argument('--invmin', default=-15 , type=float,
+    parser.add_argument('--invmin', default=-40 , type=float,
                         help="invmin. Default = -15",
                         dest="invmin")
-    parser.add_argument('--training', default= True, type=str,
+    parser.add_argument('--training', default= False, type=float,
                         help="training. Default = True",
                         dest="training")
     parser.add_argument('--high', default= False, type=float,
