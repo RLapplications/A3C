@@ -80,6 +80,6 @@ if __name__ == '__main__':
             policy[index] = [float(j) for j in policy[index]]
 
 
-    print(policy)
+    #print(policy)
     P = PI.TransitionProbs(States, Actions, args.Demand_Max,args.LT_s,args.LT_f,args.h,args.b,args.C_s,args.C_f,args.Inv_Max,args.Inv_Min, args.cap_fast, args.cap_slow,dict_states)
     print('Cost: ',MarkovChain.TestPolicy(States,P,policy))
