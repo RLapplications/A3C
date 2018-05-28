@@ -732,7 +732,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_no_improvement', default=25000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
-    parser.add_argument('--depth_nn_hidden', default=3, type=float,
+    parser.add_argument('--depth_nn_hidden', default=4, type=float,
                         help="depth_nn_hidden. Default = 3",
                         dest="depth_nn_hidden")
     parser.add_argument('--depth_nn_out', default=20, type=float,
