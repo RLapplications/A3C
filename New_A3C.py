@@ -753,7 +753,7 @@ if __name__ == '__main__':
     parser.add_argument('--invmin', default=-40 , type=float,
                         help="invmin. Default = -15",
                         dest="invmin")
-    parser.add_argument('--training', default= False, type=float,
+    parser.add_argument('--training', default= True, type=float,
                         help="training. Default = True",
                         dest="training")
     parser.add_argument('--high', default= False, type=float,
