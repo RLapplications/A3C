@@ -31,7 +31,7 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=8, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=2, type=float, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=4, type=float, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=float, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--Inv_Max', default=10, type=float,
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     Actions = environment.CreateActions(args.OrderFast, args.OrderSlow)
     dict_states = environment.CreateDictStates(States)
 
-    with open('./A3Cpolicy2-1.csv') as f:
+    with open('./A3Cpolicy.csv') as f:
         #States = []
         policy = []
 
