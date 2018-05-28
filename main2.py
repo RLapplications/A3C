@@ -68,7 +68,7 @@ if __name__ == '__main__':
     Actions = environment.CreateActions(args.OrderFast, args.OrderSlow)
     dict_states = environment.CreateDictStates(States)
 
-    with open('./A3Cpolicy.csv') as f:
+    with open('./A3C_policy.csv') as f:
         #States = []
         policy = []
 
