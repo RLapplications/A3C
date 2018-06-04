@@ -14,26 +14,19 @@ import argparse
 
 
 def main(args):
-    space  = [Real(10**-6, 10**-3, "log-uniform", name='initial_lr'),
-              Real(10**-7,10**-4, "log-uniform", name='entropy'),
-              Categorical([1,2,3,4], name='depth_nn_hidden'),
-              Categorical([1, 70, 150], name='depth_nn_layers_hidden[0]'),
-              Categorical([1, 50, 70],  name='depth_nn_layers_hidden[1]'),
-              Categorical([1, 40, 20],  name='depth_nn_layers_hidden[2]'),
-              Categorical([1, 20],  name='depth_nn_layers_hidden[3]'),
-              Categorical([1, 8], name='depth_nn_out'),
-              Categorical([3, 20],  name='p_len_episode_buffer'),
-              Categorical([ 40], name='InvMax'),
-              Categorical([-40],  name='invMin'),
-              Categorical([0, 1, 2],  name='activation_nn_hidden[0]'),
-              Categorical([0,1,2],   name='activation_nn_hidden[1]'),
-              Categorical([0,1,2],   name='activation_nn_hidden[2]'),
-              Categorical([0,1,2],  name='activation_nn_hidden[3]'),
-              Categorical([0,1,2],   name='activation_nn_out'),
+    space  = [Real(10**-5, 10**-3, "log-uniform", name='initial_lr'),
+              Real(10**-7,10**0, "log-uniform", name='entropy'),
+              Categorical([0, 1, 2,3], name='size_nn'),
+              Integer(3,20,  name='p_len_episode_buffer'),
+              [args.cut_10],
               [args.max_no_improvement],
               [args.LT_s],
+              [args.OrderFast],
+              [args.OrderSlow],
               [args.cap_slow],
-              [args.cap_fast] ]
+              [args.cap_fast],
+              [args.C_f],
+              [args.b]]
 
     log_path = 'BOLogs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S"))
     if not os.path.exists(log_path):
@@ -75,6 +68,18 @@ if __name__ == '__main__':
     parser.add_argument('--cap_fast', default=1, type=float,
                         help="cap_fast. Default = 1",
                         dest="cap_fast")
-
+    parser.add_argument('--C_f', default=150, type=float,
+                        help="C_f. Default = 150",
+                        dest="C_f")
+    parser.add_argument('--b', default=495, type=str,
+                        help="b. Default = 495",
+                        dest="b")
+    parser.add_argument('--cut_10', default=2000, type=float,
+                        help="cut_10. Default = 2000",
+                        dest="cut_10")
+    parser.add_argument('--OrderFast', default=5, type=int,
+                        help="OrderFast. Default = 5",
+                        dest="OrderFast")
+    parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
     args = parser.parse_args()
     main(args)
