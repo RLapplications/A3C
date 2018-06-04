@@ -71,7 +71,7 @@ if __name__ == '__main__':
     parser.add_argument('--C_f', default=150, type=float,
                         help="C_f. Default = 150",
                         dest="C_f")
-    parser.add_argument('--b', default=495, type=str,
+    parser.add_argument('--b', default=495, type=float,
                         help="b. Default = 495",
                         dest="b")
     parser.add_argument('--cut_10', default=2000, type=float,
