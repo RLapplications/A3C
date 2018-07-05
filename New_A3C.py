@@ -43,7 +43,6 @@ def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min, c
     if s1[0] < Inv_Min:
         s1[0] = Inv_Min
         done = True
-
     return reward / 1000000, s1, done
 
 
@@ -219,7 +218,7 @@ class Worker():
 
     def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax,
              InvMin,cap_fast, cap_slow,initial_state,Penalty,Demand_Max,max_training_episodes,actions,
-             p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min,cut_10):
+             p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min,cut_10,warmup):
         episode_count = sess.run(self.global_episodes)
         try:
             with open(self.log_path+'best_median_solution.csv', newline='') as csvfile:
@@ -237,7 +236,7 @@ class Worker():
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
             while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 1.1*best_median):  # not coord.should_stop():
-                if (episode_count % 50 == 0):
+                if (episode_count % 500 == 0):
                     self.bool_evaluating = True
                 else:
                     self.bool_evaluating = None
@@ -257,11 +256,13 @@ class Worker():
 
                     if self.bool_evaluating == True:
                         self.inv_vect = np.array(initial_state)
+
+
                     else:
                         self.inv_vect = np.array(
                             initial_state)
                     s = deepcopy(self.inv_vect)
-                    trained = False
+
                     self.no_improvement+=1#sess.run(self.no_improvement_increment)
                     while (d == False and episode_step_count < max_episode_length - 1):  # modified to continue looping
                             # Take an action using probabilities from policy network output.
@@ -287,7 +288,8 @@ class Worker():
                             episode_buffer.append([s, a, r, s1, d, v[0, 0]])
 
                             episode_values.append(v[0, 0])
-                            episode_reward += r
+                            if(episode_step_count> warmup):
+                                episode_reward += r
                             s = deepcopy(s1)
                             episode_step_count += 1
 
@@ -313,7 +315,7 @@ class Worker():
                     if(self.bool_evaluating != True):
                         break
                     else:
-                        eval_performance.append(episode_reward/episode_step_count)
+                        eval_performance.append(episode_reward/(episode_step_count-warmup))
                         #print(i,eval_performance)
                 if(self.bool_evaluating):
                     #print('PRIOR',eval_performance)
@@ -421,7 +423,7 @@ def NewCreateStates(LT_f,LT_s,Inv_Max,Inv_Min,O_f,O_s):
 def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
                      activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
                      p_len_episode_buffer, max_episode_length, OrderFast, OrderSlow, LT_s, LT_f, InvMax,
-                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10):
+                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10,warmup):
     f = open(model_path + "/Parameters.txt", "w")
     parameters = {}
     f.write("depth_nn_hidden: " + str(depth_nn_hidden))
@@ -480,6 +482,8 @@ def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_
     parameters["cap_slow"] = cap_slow
     f.write("\ncut_10" + str(cut_10))
     parameters['cut_10'] = cut_10
+    f.write("\nwarmup" + str(warmup))
+    parameters['warmup'] = warmup
     f.close()
     return parameters
 
@@ -519,6 +523,7 @@ def objective(parameters):
     entropy_decay = parameters['entropy_decay']
     entropy_min = parameters['entropy_min']
     cut_10 = parameters['cut_10']
+    warmup = parameters['warmup']
     activation_nn_hidden = [tf.nn.relu, tf.nn.relu, tf.nn.relu, tf.nn.relu]
     activation_nn_out = tf.nn.relu
     optimizer = tf.train.AdamOptimizer(learning_rate)
@@ -556,7 +561,7 @@ def objective(parameters):
     parameters = write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
                      activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
                      p_len_episode_buffer, max_episode_length, OrderFast, OrderSlow, LT_s, LT_f, InvMax,
-                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10)
+                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10,warmup)
 
     # Create worker classes
     for i in range(num_workers):
@@ -587,7 +592,7 @@ def objective(parameters):
                 worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s,
                                                   LT_f, h, b, C_s, C_f,InvMax, InvMin, cap_fast, cap_slow,initial_state,
                                                   Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,
-                                                  max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min, cut_10)
+                                                  max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min, cut_10,warmup)
                 t = threading.Thread(target=(worker_work))
                 t.start()
                 sleep(0.5)
@@ -605,6 +610,8 @@ def objective(parameters):
                     f.write(str(value) + ';')
                 for key,value in parameters.items():
                     f.write(str(key)+';')
+                for item in worker.median_solution_vector:
+                    f.write(str(item) + ';')
                 f.write('\n')
 
             with open(log_path+'best_median_solution.csv','a') as f:
@@ -613,6 +620,8 @@ def objective(parameters):
                     f.write(str(value) + ';')
                 for key,value in parameters.items():
                     f.write(str(key)+';')
+                for item in worker.mean_solution_vector:
+                    f.write(str(item) + ';')
                 f.write('\n')
 
         else:
@@ -703,121 +712,13 @@ def obj_bo(list):
     parameters['entropy_min'] = 1
     parameters['initial_state'] = [3]
     parameters['max_episode_length'] = 1000
+    parameters['warmup'] = 20
     result = objective(parameters)
 
     return result
 
 
 
-
-
-
-#
-
-  #actions = CreateActions(OrderFast, OrderSlow)  # np.array([[0,0],[0,5],[5,0],[5,5]])
-  #a_size = len(actions)  # Agent can move Left, Right, or Fire
-  #s_size = LT_s + 1
-
-  #tf.reset_default_graph()
-  #if training:
-  #    load_model = False
-  #else:
-  #    load_model = True
-
-  #model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
-  #best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
-
-  #if not os.path.exists(model_path):
-  #    os.makedirs(model_path)
-
-  #global_episodes = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
-  ## no_improvement = tf.Variable(0, dtype=tf.int32, name='global_episodes', trainable=False)
-  #trainer = optimizer  # tf.train.AdamOptimizer(learning_rate=learning_rate)
-  #master_network = AC_Network(s_size, a_size, 'global', None, depth_nn_out, activation_nn_hidden, depth_nn_hidden,
-  #                            depth_nn_layers_hidden, activation_nn_out, entropy_factor)  # Generate global network
-  #num_workers = nb_workers  # multiprocessing.cpu_count()  # Set workers to number of available CPU threads
-  #workers = []
-
-  #write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
-  #                 activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
-  #                 p_len_episode_buffer, max_episode_length, OrderFast, OrderSlow, LT_s, LT_f, InvMax,
-  #                 max_training_episodes, h, b, C_f, C_s, InvMin, Penalty, initial_state, nb_workers, cap_fast,
-  #                 cap_slow)
-
-  ## Create worker classes
-  #for i in range(num_workers):
-  #    if not os.path.exists(best_path + '/Train_' + str(i)):
-  #        os.makedirs(best_path + '/Train_' + str(i))
-  #    workers.append(Worker(i, s_size, a_size, trainer, model_path, best_path, global_episodes, depth_nn_out,
-  #                          activation_nn_hidden, depth_nn_hidden, depth_nn_layers_hidden, activation_nn_out,
-  #                          entropy_factor))
-  #saver = tf.train.Saver(max_to_keep=5)
-  #saver_best = tf.train.Saver(max_to_keep=None)
-
-  #with tf.Session() as sess:
-  #    coord = tf.train.Coordinator()
-  #    if load_model == True:
-
-  #        print('Loading Model...')
-  #        ckpt = tf.train.get_checkpoint_state('./')
-  #        saver.restore(sess, ckpt.model_checkpoint_path)
-  #    else:
-  #        sess.run(tf.global_variables_initializer())
-
-  #    # This is where the asynchronous magic happens.
-  #    # Start the "work" process for each worker in a separate threat.
-
-  #    if (training):
-  #        worker_threads = []
-  #        temp_best_solutions = np.zeros(len(workers))
-  #        for worker in workers:
-  #            worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best, Demand,
-  #                                              LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow, initial_state, Penalty,
-  #                                              Demand_Max, max_training_episodes, actions, p_len_episode_buffer,
-  #                                              max_no_improvement, pick_largest,verbose,entropy_decay,entropy_min)
-  #            t = threading.Thread(target=(worker_work))
-  #            t.start()
-  #            sleep(0.5)
-  #            worker_threads.append(t)
-  #        coord.join(worker_threads)
-  #        for index, worker in enumerate(workers):
-  #            temp_best_solutions[index] = worker.best_solution
-  #        best_solution_found = np.min(temp_best_solutions)
-  #    else:
-  #        States = NewCreateStates(LT_f, LT_s, 10, -10, OrderFast, OrderSlow)
-  #        print(States)
-  #        policy_fast = []
-  #        policy_slow = []
-  #        A3C_policy = []
-  #        for index, state in enumerate(States):
-  #            prob_vector = sess.run(workers[0].local_AC.policy, feed_dict={workers[0].local_AC.inputs: [state]})[0]
-  #            A3C_policy.append(prob_vector)
-  #            # print(state,prob_vector,np.sum(prob_vector))
-  #            action_prob_fast = np.zeros(OrderFast + 1)
-  #            action_prob_slow = np.zeros(OrderSlow + 1)
-
-  #            for i in range(len(actions)):
-  #                action_prob_fast[actions[i][0]] += prob_vector[i]
-  #                action_prob_slow[actions[i][1]] += prob_vector[i]
-  #            print(state, np.argmax(action_prob_fast), np.argmax(action_prob_slow), "FAST", action_prob_fast, "SLOW",
-  #                  action_prob_slow)
-  #            policy_fast.append(deepcopy(action_prob_fast))
-  #            policy_slow.append(deepcopy(action_prob_slow))
-
-  #        np.savetxt('A3C_policy.csv', A3C_policy, delimiter=';')
-  #        with open('cost.csv', 'w') as f:
-  #            for index, i in enumerate(States):
-  #                for j in States[index]:
-  #                    f.write(str(j) + ';')
-  #                f.write(';')
-  #                for j in policy_fast[index]:
-  #                    f.write(str(j) + ';')
-  #                f.write(';')
-  #                for j in policy_slow[index]:
-  #                    f.write(str(j) + ';')
-  #                f.write(';')
-  #                f.write('\n')
-  #    return best_solution_found
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -828,8 +729,8 @@ if __name__ == '__main__':
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-    parser.add_argument('--max_no_improvement', default=2500, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
-    parser.add_argument('--max_training_episodes', default=10000000, type=float, help="max_training_episodes. Default = 10000000",
+    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_training_episodes', default=1000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
     parser.add_argument('--depth_nn_hidden', default=4, type=float,
                         help="depth_nn_hidden. Default = 3",
@@ -910,6 +811,9 @@ if __name__ == '__main__':
     parser.add_argument('--cut_10', default=2000, type=float,
                         help="cut_10. Default = 2000",
                         dest="cut_10")
+    parser.add_argument('--warmup', default=20, type=float,
+                        help="warmup. Default = 20",
+                        dest="warmup")
     args = parser.parse_args()
     parameters = vars(args)
     objective(parameters)

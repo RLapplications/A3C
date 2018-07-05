@@ -54,10 +54,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-iterations', '--iterations', default=50, type=float,
+    parser.add_argument('-iterations', '--iterations', default=100, type=float,
                         help="Number of hyperparameter sets tested",
                         dest="iterations")
-    parser.add_argument('--max_no_improvement', default=2500, type=float, help="max_no_improvement. Default = 5000",
+    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000",
                         dest="max_no_improvement")
     parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
@@ -77,9 +77,9 @@ if __name__ == '__main__':
     parser.add_argument('--cut_10', default=2000, type=float,
                         help="cut_10. Default = 2000",
                         dest="cut_10")
-    parser.add_argument('--OrderFast', default=5, type=int,
-                        help="OrderFast. Default = 5",
+    parser.add_argument('--OrderFast', default=10, type=int,
+                        help="OrderFast. Default = 10",
                         dest="OrderFast")
-    parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
+    parser.add_argument('--OrderSlow', default=10, type=int, help="OrderSlow. Default = 10", dest="OrderSlow")
     args = parser.parse_args()
     main(args)
