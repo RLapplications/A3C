@@ -93,6 +93,7 @@ class AC_Network():
             if depth_nn_hidden >= 1:
                 self.hidden1 = slim.fully_connected(inputs=self.inputs, num_outputs=depth_nn_layers_hidden[0],
                                                     activation_fn=activation_nn_hidden[0])
+
                 self.state_out = slim.fully_connected(inputs=self.hidden1, num_outputs=depth_nn_out,
                                                       activation_fn=activation_nn_out)
             if depth_nn_hidden >= 2:
@@ -220,13 +221,24 @@ class Worker():
              InvMin,cap_fast, cap_slow,initial_state,Penalty,Demand_Max,max_training_episodes,actions,
              p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min,cut_10,warmup):
         episode_count = sess.run(self.global_episodes)
+        #try:
+        #    with open(self.log_path+'best_median_solution.csv', newline='') as csvfile:
+        #        csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
+        #        best_median_vector = []
+        #        for row in csvreader:
+        #            best_median_vector.append(float(row[0]))
+        #        best_median = np.min(best_median_vector)
+        #        #print(best_median)
+        #except:
+        #    best_median = 999999999999
+#
         try:
-            with open(self.log_path+'best_median_solution.csv', newline='') as csvfile:
+            with open('Results_combined.csv', newline='') as csvfile:
                 csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
-                best_median_vector = []
                 for row in csvreader:
-                    best_median_vector.append(float(row[0]))
-                best_median = np.min(best_median_vector)
+                    if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) ):
+                        best_median = float(row[0])
+                        print(LT_s,C_f,b,best_median)
                 #print(best_median)
         except:
             best_median = 999999999999
@@ -236,7 +248,7 @@ class Worker():
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
             while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 1.1*best_median):  # not coord.should_stop():
-                if (episode_count % 500 == 0):
+                if (episode_count % 50 == 0):
                     self.bool_evaluating = True
                 else:
                     self.bool_evaluating = None
@@ -326,26 +338,36 @@ class Worker():
 
                 if self.bool_evaluating == True:
                     #if(verbose): print("EVALUATION", episode_reward / episode_step_count, episode_step_count)
-                    if (verbose): print("EVALUATION",median_performance, self.best_median_solution,self.no_improvement,episode_count)
+                    if (verbose): print("EVALUATION",median_performance/best_median,median_performance, self.best_median_solution,self.no_improvement,episode_count)
                     if (median_performance < self.best_median_solution):# and episode_step_count == max_episode_length - 1):
                         self.best_median_solution = median_performance#episode_reward / episode_step_count
                         self.median_solution_vector = eval_performance
 
-                        f= open(self.best_path +"/best_median_solution%i.txt"%self.number,"w")
-                        f.write(str(self.best_median_solution) + ' ' + str(std_performance) + ' ' +  str(self.median_solution_vector) +' '+str (episode_step_count))
-                        f.close()
+                        #f= open(self.best_path +"/best_median_solution%i.csv"%self.number,"a")
+                        #f.write(str(self.best_median_solution) + ' ' + str(std_performance) + ' ' +  str(self.median_solution_vector) +' '+str(episode_step_count)
+                        #        + ' ' + str(LT_s)+' '+str(b)+' '+str(C_f))
+                        #f.close()
+                        with open('best_median_solution%i-LT_s %i-b %i -C_f %i.csv'%(self.number,LT_s,b,C_f), 'a') as f:
+                            f.write(str(self.best_median_solution) + ';' + str(LT_s) + ';'+ str(b) + ';'+ str(C_f) + ';')
+                            for item in self.median_solution_vector:
+                                f.write(str(item) + ';')
+                            f.write('\n')
                         saver_best.save(sess, self.best_path + '/Train_' + str(self.number) + '/model_median_' + ' ' + str(
                             episode_count) + '.cptk')
                         self.no_improvement=0#sess.run(self.no_improvement.assign(0))
-                    if (
-                        mean_performance < self.best_mean_solution):  # and episode_step_count == max_episode_length - 1):
+                    if (mean_performance < self.best_mean_solution):  # and episode_step_count == max_episode_length - 1):
                         self.best_mean_solution = mean_performance  # episode_reward / episode_step_count
                         self.mean_solution_vector = eval_performance
 
-                        f = open(self.best_path + "/best_mean_solution%i.txt" % self.number, "w")
-                        f.write(str(self.best_mean_solution) + ' ' + str(std_performance) + ' ' + str(self.mean_solution_vector) + ' ' + str(
-                            episode_step_count))
-                        f.close()
+                        #f = open(self.best_path + "/best_mean_solution%i.csv" % self.number, "a")
+                        #f.write(str(self.best_mean_solution) + ' ' + str(std_performance) + ' ' + str(self.mean_solution_vector) + ' ' + str(
+                        #    episode_step_count)+ ' ' + str(LT_s)+' '+str(b)+' '+str(C_f))
+                        #f.close()
+                        with open('best_mean_solution%i-LT_s %i-b %i -C_f %i.csv'%(self.number,LT_s,b,C_f), 'a') as f:
+                            f.write(str(self.best_mean_solution) + ';' + str(LT_s) + ';'+ str(b) + ';'+ str(C_f) + ';')
+                            for item in self.mean_solution_vector:
+                                f.write(str(item) + ';')
+                            f.write('\n')
                         saver_best.save(sess, self.best_path + '/Train_' + str(
                             self.number) + '/model_mean_' + ' ' + str(
                             episode_count) + '.cptk')
@@ -403,7 +425,7 @@ class Worker():
 
 
                 episode_count += 1
-                if self.no_improvement >= max_no_improvement:
+                if self.no_improvement >= max_no_improvement or self.best_median_solution < 1.02 * best_median:
                     break
 
 
@@ -732,13 +754,13 @@ if __name__ == '__main__':
     parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=1000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
-    parser.add_argument('--depth_nn_hidden', default=4, type=float,
+    parser.add_argument('--depth_nn_hidden', default=3, type=float,
                         help="depth_nn_hidden. Default = 3",
                         dest="depth_nn_hidden")
     parser.add_argument('--depth_nn_out', default=20, type=float,
                         help="depth_nn_out. Default = 20",
                         dest="depth_nn_out")
-    parser.add_argument('--depth_nn_layers_hidden', default=[150,120,80,40], type=list,
+    parser.add_argument('--depth_nn_layers_hidden', default=[150,120,80,0], type=list,
                         help="depth_nn_layers_hidden. Default = [40,20,10,10]",
                         dest="depth_nn_layers_hidden")
     parser.add_argument('--p_len_episode_buffer', default=20, type=float,
@@ -778,7 +800,7 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--cap_slow', default=1, type=float,
@@ -816,4 +838,11 @@ if __name__ == '__main__':
                         dest="warmup")
     args = parser.parse_args()
     parameters = vars(args)
-    objective(parameters)
+
+    for LT_s in [1,2,3,4]:
+        for b in [95,195,495]:
+            for C_f in [101,105,110]:
+                args.LT_s = LT_s
+                args.b = b
+                args.C_f = C_f
+                objective(parameters)
