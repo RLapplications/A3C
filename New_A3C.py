@@ -842,7 +842,7 @@ if __name__ == '__main__':
     #for LT_s in [1,2,3,4]:
     for b in [95,195,495]:
         for C_f in [101,105,110]:
-            args.LT_s = LT_s
+            #args.LT_s = LT_s
             args.b = b
             args.C_f = C_f
             objective(parameters)
