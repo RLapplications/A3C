@@ -239,10 +239,11 @@ class Worker():
                     if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):
                         best_median = float(row[0])
                         print(LT_s,C_f,b,best_median)
+
                 #print(best_median)
         except:
             best_median = 999999999999
-
+        best_median = 999999999999 #RTEMOVE THIS
         print('Best median found:', best_median)
 
         print("Starting worker " + str(self.number))
