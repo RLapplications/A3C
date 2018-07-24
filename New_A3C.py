@@ -247,7 +247,7 @@ class Worker():
 
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
-            while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 0.95 * best_median):  # not coord.should_stop():
+            while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 0.75 * best_median):  # not coord.should_stop():
                 if (episode_count % 50 == 0):
                     self.bool_evaluating = True
                 else:
