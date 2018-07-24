@@ -236,7 +236,7 @@ class Worker():
             with open('Results_combined.csv', newline='') as csvfile:
                 csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
                 for row in csvreader:
-                    if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) ):
+                    if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):
                         best_median = float(row[0])
                         print(LT_s,C_f,b,best_median)
                 #print(best_median)
@@ -425,7 +425,7 @@ class Worker():
 
 
                 episode_count += 1
-                if self.no_improvement >= max_no_improvement or self.best_median_solution < 1.02 * best_median:
+                if self.no_improvement >= max_no_improvement or self.best_median_solution < 0.99* best_median:
                     break
 
 
@@ -509,6 +509,7 @@ def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_
     f.close()
     return parameters
 
+#def SimulateA3C(initial):
 
 def objective(parameters):
     Demand_Max = parameters['Demand_Max']
@@ -647,31 +648,29 @@ def objective(parameters):
                 f.write('\n')
 
         else:
-            States = NewCreateStates(LT_f,LT_s,10,-10,OrderFast,OrderSlow)
-            print(States)
+
+            states = [[4,2,2,2,2,2,2,0],[4,0,0,0,4,4,4,0],[4,4,4,4,0,0,0,0],[4,5,4,3,0,0,0,0],[4,0,0,0,3,4,5,0]]
             policy_fast = []
             policy_slow = []
-            A3C_policy = []
-            for index, state in enumerate(States):
+            for state in states:
                 prob_vector = sess.run(workers[0].local_AC.policy,feed_dict={workers[0].local_AC.inputs:[state]})[0]
-                A3C_policy.append(prob_vector)
-                #print(state,prob_vector,np.sum(prob_vector))
                 action_prob_fast = np.zeros(OrderFast + 1)
                 action_prob_slow = np.zeros(OrderSlow + 1)
 
                 for i in range(len(actions)):
                     action_prob_fast[actions[i][0]] += prob_vector[i]
                     action_prob_slow[actions[i][1]] += prob_vector[i]
-                print(state,np.argmax(action_prob_fast),np.argmax(action_prob_slow),"FAST", action_prob_fast,"SLOW", action_prob_slow)
                 policy_fast.append(deepcopy(action_prob_fast))
                 policy_slow.append(deepcopy(action_prob_slow))
+                print(state, np.argmax(action_prob_fast), np.argmax(action_prob_slow), "FAST", action_prob_fast, "SLOW",
+                      action_prob_slow)
 
-            np.savetxt('A3C_policy.csv',A3C_policy,delimiter=';')
             with open('cost.csv', 'w') as f:
-               for index, i in enumerate(States):
-                   for j in States[index]:
+               for index, i in enumerate(states):
+                   for j in states[index]:
                         f.write(str(j) + ';')
                    f.write(';')
+                   print(index)
                    for j in policy_fast[index]:
                         f.write(str(j) + ';')
                    f.write(';')
@@ -679,6 +678,41 @@ def objective(parameters):
                         f.write(str(j) + ';')
                    f.write(';')
                    f.write('\n')
+
+            FullEnumeration = False
+            if FullEnumeration:
+                States = NewCreateStates(LT_f,LT_s,InvMax,InvMin,OrderFast,OrderSlow)
+                print(States)
+                policy_fast = []
+                policy_slow = []
+                A3C_policy = []
+                for index, state in enumerate(States):
+                    prob_vector = sess.run(workers[0].local_AC.policy,feed_dict={workers[0].local_AC.inputs:[state]})[0]
+                    A3C_policy.append(prob_vector)
+                    #print(state,prob_vector,np.sum(prob_vector))
+                    action_prob_fast = np.zeros(OrderFast + 1)
+                    action_prob_slow = np.zeros(OrderSlow + 1)
+
+                    for i in range(len(actions)):
+                        action_prob_fast[actions[i][0]] += prob_vector[i]
+                        action_prob_slow[actions[i][1]] += prob_vector[i]
+                    print(state,np.argmax(action_prob_fast),np.argmax(action_prob_slow),"FAST", action_prob_fast,"SLOW", action_prob_slow)
+                    policy_fast.append(deepcopy(action_prob_fast))
+                    policy_slow.append(deepcopy(action_prob_slow))
+
+                np.savetxt('A3C_policy.csv',A3C_policy,delimiter=';')
+                with open('cost.csv', 'w') as f:
+                   for index, i in enumerate(States):
+                       for j in States[index]:
+                            f.write(str(j) + ';')
+                       f.write(';')
+                       for j in policy_fast[index]:
+                            f.write(str(j) + ';')
+                       f.write(';')
+                       for j in policy_slow[index]:
+                            f.write(str(j) + ';')
+                       f.write(';')
+                       f.write('\n')
         return best_median_solution_found
 
 
@@ -751,7 +785,7 @@ if __name__ == '__main__':
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=4000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=1000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
     parser.add_argument('--depth_nn_hidden', default=3, type=float,
@@ -800,7 +834,7 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=4, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--cap_slow', default=1, type=float,
@@ -839,10 +873,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     parameters = vars(args)
 
-    #for LT_s in [1,2,3,4]:
-    for b in [95,195,495]:
-        for C_f in [101,105,110]:
-            #args.LT_s = LT_s
-            args.b = b
-            args.C_f = C_f
-            objective(parameters)
+    for LT_s in [args.LT_s]:
+        for b in [95,195,495]:
+            for C_f in [101,105,110]:
+                args.LT_s = LT_s
+                args.b = b
+                args.C_f = C_f
+    objective(parameters)
