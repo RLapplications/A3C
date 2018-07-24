@@ -247,7 +247,7 @@ class Worker():
 
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
-            while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 1.1*best_median):  # not coord.should_stop():
+            while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 0.95 * best_median):  # not coord.should_stop():
                 if (episode_count % 50 == 0):
                     self.bool_evaluating = True
                 else:
@@ -649,7 +649,9 @@ def objective(parameters):
 
         else:
 
-            states = [[4,2,2,2,2,2,2,0],[4,0,0,0,4,4,4,0],[4,4,4,4,0,0,0,0],[4,5,4,3,0,0,0,0],[4,0,0,0,3,4,5,0]]
+            states = [[4,2,2,2,2,2,2,0],[4,0,0,0,4,4,4,0],[4,4,4,4,0,0,0,0],[4,5,4,3,0,0,0,0],[4,0,0,0,3,4,5,0],
+                      [3, 2, 2, 2, 2, 2, 2, 0], [3, 0, 0, 0, 4, 4, 4, 0], [3, 4, 4, 4, 0, 0, 0, 0],
+                      [3, 5, 4, 3, 0, 0, 0, 0], [3, 0, 0, 0, 3, 4, 5, 0]]
             policy_fast = []
             policy_slow = []
             for state in states:
@@ -785,7 +787,7 @@ if __name__ == '__main__':
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-    parser.add_argument('--max_no_improvement', default=4000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=1000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
     parser.add_argument('--depth_nn_hidden', default=3, type=float,
@@ -834,7 +836,7 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=1, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=7, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--cap_slow', default=1, type=float,
@@ -846,13 +848,13 @@ if __name__ == '__main__':
     parser.add_argument('--C_s', default=100, type=float,
                         help="C_s. Default = 100",
                         dest="C_s")
-    parser.add_argument('--C_f', default=150, type=float,
+    parser.add_argument('--C_f', default=105, type=float,
                         help="C_f. Default = 150",
                         dest="C_f")
     parser.add_argument('--h', default=5, type=float,
                         help="h. Default = 5",
                         dest="h")
-    parser.add_argument('--b', default=495, type=str,
+    parser.add_argument('--b', default=95, type=str,
                         help="b. Default = 495",
                         dest="b")
     parser.add_argument('--penalty', default=1, type=str,
@@ -873,10 +875,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     parameters = vars(args)
 
-    for LT_s in [args.LT_s]:
-        for b in [95,195,495]:
-            for C_f in [101,105,110]:
-                args.LT_s = LT_s
-                args.b = b
-                args.C_f = C_f
+    #for LT_s in [args.LT_s]:
+    #    for b in [95,195,495]:
+    #        for C_f in [101,105,110]:
+    #            args.LT_s = LT_s
+    #            args.b = b
+    #            args.C_f = C_f
     objective(parameters)
