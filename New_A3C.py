@@ -239,16 +239,15 @@ class Worker():
                     if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):
                         best_median = float(row[0])
                         print(LT_s,C_f,b,best_median)
-
                 #print(best_median)
         except:
             best_median = 999999999999
-        best_median = 999999999999 #RTEMOVE THIS
+
         print('Best median found:', best_median)
 
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
-            while episode_count < max_training_episodes and (episode_count < cut_10):# or self.best_median_solution < 0.75 * best_median):  # not coord.should_stop():
+            while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 0.75 * best_median):  # not coord.should_stop():
                 if (episode_count % 50 == 0):
                     self.bool_evaluating = True
                 else:
@@ -855,7 +854,7 @@ if __name__ == '__main__':
     parser.add_argument('--h', default=5, type=float,
                         help="h. Default = 5",
                         dest="h")
-    parser.add_argument('--b', default=95, type=str,
+    parser.add_argument('--b', default=95, type=int,
                         help="b. Default = 495",
                         dest="b")
     parser.add_argument('--penalty', default=1, type=str,
