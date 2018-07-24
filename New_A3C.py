@@ -233,7 +233,7 @@ class Worker():
         #    best_median = 999999999999
 #
         try:
-            with open('/Results_combined.csv', newline='') as csvfile:
+            with open('Results_combined.csv', newline='') as csvfile:
                 csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
                 for row in csvreader:
                     if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):
@@ -247,7 +247,7 @@ class Worker():
 
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
-            while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 0.75 * best_median):  # not coord.should_stop():
+            while episode_count < max_training_episodes and (episode_count < cut_10):# or self.best_median_solution < 0.75 * best_median):  # not coord.should_stop():
                 if (episode_count % 50 == 0):
                     self.bool_evaluating = True
                 else:
