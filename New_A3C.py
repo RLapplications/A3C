@@ -233,7 +233,7 @@ class Worker():
         #    best_median = 999999999999
 #
         try:
-            with open('Results_combined.csv', newline='') as csvfile:
+            with open('/Results_combined.csv', newline='') as csvfile:
                 csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
                 for row in csvreader:
                     if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):
