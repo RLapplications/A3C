@@ -832,10 +832,10 @@ if __name__ == '__main__':
     parser.add_argument('-Demand_Max', '--Demand_Max', default=4, type=float,
                         help="Demand_Max. Default = 4",
                         dest="Demand_Max")
-    parser.add_argument('--OrderFast', default=5, type=int,
+    parser.add_argument('--OrderFast', default=4, type=int,
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
-    parser.add_argument('--OrderSlow', default=5, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
+    parser.add_argument('--OrderSlow', default=4, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
     parser.add_argument('--LT_s', default=7, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
