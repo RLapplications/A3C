@@ -787,7 +787,7 @@ if __name__ == '__main__':
                         help="Strength of the entropy regularization term (needed for actor-critic). Default = 0.01",
                         dest="entropy")
     parser.add_argument('--gamma', default=0.99, type=float, help="Discount factor. Default = 0.99", dest="gamma")
-    parser.add_argument('--max_no_improvement', default=2000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
+    parser.add_argument('--max_no_improvement', default=10000, type=float, help="max_no_improvement. Default = 5000", dest="max_no_improvement")
     parser.add_argument('--max_training_episodes', default=1000000, type=float, help="max_training_episodes. Default = 10000000",
                         dest="max_training_episodes")
     parser.add_argument('--depth_nn_hidden', default=3, type=float,
