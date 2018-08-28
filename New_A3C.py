@@ -628,7 +628,7 @@ def objective(parameters):
         load_model = False
     else:
         load_model=True
-    #load_model = True
+    load_model = True
     model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
     best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
     log_path = 'Logs/'
@@ -970,7 +970,7 @@ if __name__ == '__main__':
     args.LT_s = 14
     args.C_f = 105
     args.u = 105
-    args.OrderFast = 20
+    args.OrderFast = 35
     args.OrderSlow = 35
     args.InvMax = 200
     args.InvMin = -40
