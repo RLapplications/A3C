@@ -967,21 +967,6 @@ if __name__ == '__main__':
 
     parameters = vars(args)
 
-    #for LT_s in [args.LT_s]:
-    #    for b in [95,195,495]:
-    #        for C_f in [101,105,110]:
-    #            args.LT_s = LT_s
-    #            args.b = b
-    #            args.C_f = C_f
-
-
-   # for C_f in [120]:
-   #     for k in [0,1,2,3]:
-   #         for m in [1.05]:
-   #             args.k = k
-   #             args.m = m
-   #             args.u = C_f
-   #             args.C_f = C_f
     args.LT_s = 14
     args.C_f = 105
     args.u = 105
@@ -990,6 +975,7 @@ if __name__ == '__main__':
     args.InvMax = 200
     args.InvMin = -40
     args.p_len_episode_buffer = 50
+    parameters = vars(args)
     while(True):
         objective(parameters)
      #          with open('Results_combinedSF.csv', newline='') as csvfile:
