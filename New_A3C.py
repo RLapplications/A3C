@@ -45,6 +45,31 @@ def new_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min, c
         done = True
     return reward / 1000000, s1, done
 
+def SF_transition(s, a, demand, LT_s, LT_f, h, b, C_s, C_f, Inv_Max, Inv_Min, cap_fast, cap_slow, k, u, m):
+    done = False
+    s1 = deepcopy(s)
+    reward = 0
+    s1[LT_f] += a[0]
+    s1[LT_s] += a[1]
+    s1[0] += - demand
+
+    reward += k * u + u * m * max(a[0] - k, 0)  + a[1] * C_s
+
+    if s1[0] >= 0:
+        reward += s1[0] * h
+    else:
+        reward += -s1[0] * b
+    s1[0] += s1[1]
+    for i in range(1, LT_s):
+        s1[i] = s1[i + 1]
+    s1[LT_s] = 0
+    if (s1[0] > Inv_Max):
+        s1[0] = Inv_Max
+        done = True
+    if s1[0] < Inv_Min:
+        s1[0] = Inv_Min
+        done = True
+    return reward/1000000, s1, done
 
 
 # Copies one set of variables to another.
@@ -219,7 +244,8 @@ class Worker():
 
     def work(self, max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s, LT_f, h, b, C_s, C_f, InvMax,
              InvMin,cap_fast, cap_slow,initial_state,Penalty,Demand_Max,max_training_episodes,actions,
-             p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min,cut_10,warmup):
+             p_len_episode_buffer,max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min,cut_10,warmup,distribution,
+             baseline,k,u,m):
         episode_count = sess.run(self.global_episodes)
         #try:
         #    with open(self.log_path+'best_median_solution.csv', newline='') as csvfile:
@@ -233,23 +259,29 @@ class Worker():
         #    best_median = 999999999999
 #
         try:
-            with open('Results_combined.csv', newline='') as csvfile:
+            with open('Results_combinedNormal20-4.csv', newline='') as csvfile:
                 csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
                 for row in csvreader:
-                    if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):
+                    if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):# and k == int(row[7])):
                         best_median = float(row[0])
                         print(LT_s,C_f,b,best_median)
+
                 #print(best_median)
         except:
             best_median = 999999999999
+
 
         print('Best median found:', best_median)
 
         print("Starting worker " + str(self.number))
         with sess.as_default(), sess.graph.as_default():
+            start = time.time()
             while episode_count < max_training_episodes and (episode_count < cut_10 or self.best_median_solution < 1.1 * best_median):  # not coord.should_stop():
-                if (episode_count % 50 == 0):
+                if (episode_count % 5 == 0):
                     self.bool_evaluating = True
+                    if( self.number == 0):
+                        print(time.time() -start)
+                        start = time.time()
                 else:
                     self.bool_evaluating = None
                 #if (episode_count % 10 == 0 and self.local_AC.entropy_factor > entropy_min):
@@ -260,7 +292,6 @@ class Worker():
                 for i in range(10):
                     episode_buffer = []
                     episode_values = []
-
                     eval_buffer = []
                     episode_reward = 0
                     episode_step_count = 0
@@ -286,14 +317,38 @@ class Worker():
                             else:
                                 a = np.random.choice(np.arange(len(a_dist[0])), p=a_dist[0])
 
-                            if self.bool_evaluating == True:
-                                r,s1,d = new_transition(s, actions[a], Demand[episode_step_count*(i+1)], LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow)
-                                d = False
+                            if(distribution == 'normal'):
+                                if self.bool_evaluating == True:
+                                    demand = max(0, np.round(np.random.normal(20, 4)))
+                                    r, s1, d = SF_transition(s, actions[a], demand, LT_s, LT_f,
+                                                             h, b, C_s,
+                                                             C_f, InvMax, InvMin, cap_fast, cap_slow, k, u, m)
 
+                                    #r, s1, d = SF_transition(s, actions[a], Demand[episode_step_count * (i + 1)], LT_s,
+                                    #                          LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow,k,u,m)
+                                    #print(s,actions[a],s1,Demand[episode_step_count])
+                                    d = False
+
+                                else:
+                                    demand = max(0, np.round(np.random.normal(20, 4)))
+
+                                    r, s1, d = SF_transition(s, actions[a], demand, LT_s, LT_f,
+                                                              h, b, C_s,
+                                                              C_f, InvMax, InvMin, cap_fast, cap_slow,k,u,m)
+                                    d = False
                             else:
-                                r, s1, d = new_transition(s, actions[a], random.randint(0, Demand_Max), LT_s, LT_f, h, b, C_s,
-                                                          C_f, InvMax, InvMin, cap_fast, cap_slow)
-                                d = False
+                                if self.bool_evaluating == True:
+                                    #r,s1,d = SF_transition(s, actions[a], Demand[episode_step_count*(i+1)], LT_s, LT_f, h, b, C_s, C_f, InvMax, InvMin, cap_fast, cap_slow,k,u,m)
+                                    r, s1, d = SF_transition(s, actions[a], random.randint(0, Demand_Max), LT_s, LT_f,
+                                                             h, b, C_s,C_f, InvMax, InvMin, cap_fast, cap_slow,k,u,m)
+
+                                    d = False
+
+                                else:
+
+                                    r, s1, d = SF_transition(s, actions[a], random.randint(0, Demand_Max), LT_s, LT_f, h, b, C_s,
+                                                              C_f, InvMax, InvMin, cap_fast, cap_slow,k,u,m)
+                                    d = False
 
                             if self.bool_evaluating == True:
                                 eval_buffer.append([s, actions[a], r, s1, d, v[0, 0]])
@@ -327,7 +382,7 @@ class Worker():
                     if(self.bool_evaluating != True):
                         break
                     else:
-                        eval_performance.append(episode_reward/(episode_step_count-warmup))
+                        eval_performance.append(episode_reward/(episode_step_count-warmup)-baseline)
                         #print(i,eval_performance)
                 if(self.bool_evaluating):
                     #print('PRIOR',eval_performance)
@@ -347,13 +402,12 @@ class Worker():
                         #f.write(str(self.best_median_solution) + ' ' + str(std_performance) + ' ' +  str(self.median_solution_vector) +' '+str(episode_step_count)
                         #        + ' ' + str(LT_s)+' '+str(b)+' '+str(C_f))
                         #f.close()
-                        with open('best_median_solution%i-LT_s %i-b %i -C_f %i.csv'%(self.number,LT_s,b,C_f), 'a') as f:
+                        with open('best_median_solution%i-LT_s %i-b %i -C_f %i -Cap %i.csv'%(self.number,LT_s,b,C_f,cap_slow), 'a') as f:
                             f.write(str(self.best_median_solution) + ';' + str(LT_s) + ';'+ str(b) + ';'+ str(C_f) + ';')
                             for item in self.median_solution_vector:
                                 f.write(str(item) + ';')
                             f.write('\n')
-                        saver_best.save(sess, self.best_path + '/Train_' + str(self.number) + '/model_median_' + ' ' + str(
-                            episode_count) + '.cptk')
+                        saver_best.save(sess, self.best_path + '/Train_' + str(self.number) + '/model_median' + '-' +str(LT_s)+ '-' + str(b)+ '-' + str(C_f)+ '-' + str(cap_slow)+ '-' + distribution+ '-' + str(k) + '.cptk')
                         self.no_improvement=0#sess.run(self.no_improvement.assign(0))
                     if (mean_performance < self.best_mean_solution):  # and episode_step_count == max_episode_length - 1):
                         self.best_mean_solution = mean_performance  # episode_reward / episode_step_count
@@ -369,8 +423,7 @@ class Worker():
                                 f.write(str(item) + ';')
                             f.write('\n')
                         saver_best.save(sess, self.best_path + '/Train_' + str(
-                            self.number) + '/model_mean_' + ' ' + str(
-                            episode_count) + '.cptk')
+                            self.number) + '/model_mean' + '-' +str(LT_s)+ '-' + str(b)+ '-' + str(C_f)+ '-' + str(cap_slow)+ '-' + distribution+ '-' + str(k) + '.cptk')
                         # print(sess.run(self.number,self.no_improvement))
 
                 if self.bool_evaluating != True:
@@ -398,8 +451,8 @@ class Worker():
                 # Periodically save gifs of episodes, model parameters, and summary statistics.
 
 
-                if episode_count % 250 == 0 and self.name == 'worker_0':
-                    saver.save(sess, self.model_path + '/model-' + str(episode_count) + '.cptk')
+                #if episode_count % 250 == 0 and self.name == 'worker_0':
+                #    saver.save(sess, self.model_path + '/model-' + str(episode_count) + '.cptk')
                     # print("Saved Model")
                 if self.bool_evaluating != True:
                     mean_reward = np.mean(self.episode_rewards[-5:])
@@ -425,7 +478,7 @@ class Worker():
 
 
                 episode_count += 1
-                if self.no_improvement >= max_no_improvement or self.best_median_solution < 0.75* best_median:
+                if self.no_improvement >= max_no_improvement:# or self.best_median_solution < 0.75* best_median:
                     break
 
 
@@ -445,7 +498,7 @@ def NewCreateStates(LT_f,LT_s,Inv_Max,Inv_Min,O_f,O_s):
 def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
                      activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
                      p_len_episode_buffer, max_episode_length, OrderFast, OrderSlow, LT_s, LT_f, InvMax,
-                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10,warmup):
+                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10,warmup,k,u,m):
     f = open(model_path + "/Parameters.txt", "w")
     parameters = {}
     f.write("depth_nn_hidden: " + str(depth_nn_hidden))
@@ -506,10 +559,16 @@ def write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_
     parameters['cut_10'] = cut_10
     f.write("\nwarmup" + str(warmup))
     parameters['warmup'] = warmup
+    f.write("\nk" + str(k))
+    parameters['k'] = k
+    f.write("\nu" + str(u))
+    parameters['u'] = u
+    f.write("\nm" + str(m))
+    parameters['m'] = m
     f.close()
     return parameters
 
-#def SimulateA3C(initial):
+
 
 def objective(parameters):
     Demand_Max = parameters['Demand_Max']
@@ -552,7 +611,10 @@ def objective(parameters):
     optimizer = tf.train.AdamOptimizer(learning_rate)
     activations = [tf.nn.relu, tf.nn.relu]
     max_episode_length = parameters['max_episode_length']#100
-
+    distribution = parameters['distribution']
+    k = parameters['k']
+    u = parameters['u']
+    m = parameters['m']
     # discount rate for advantage estimation and reward discounting
 
 
@@ -566,7 +628,7 @@ def objective(parameters):
         load_model = False
     else:
         load_model=True
-
+    #load_model = True
     model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
     best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
     log_path = 'Logs/'
@@ -584,7 +646,7 @@ def objective(parameters):
     parameters = write_parameters(model_path, depth_nn_hidden, depth_nn_layers_hidden, depth_nn_out, entropy_factor,
                      activation_nn_hidden, activation_nn_out, learning_rate, optimizer, activations,
                      p_len_episode_buffer, max_episode_length, OrderFast, OrderSlow, LT_s, LT_f, InvMax,
-                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10,warmup)
+                     max_training_episodes,h,b,C_f,C_s,InvMin,Penalty,initial_state,nb_workers,cap_fast,cap_slow,cut_10,warmup,k,u,m)
 
     # Create worker classes
     for i in range(num_workers):
@@ -606,7 +668,8 @@ def objective(parameters):
 
         # This is where the asynchronous magic happens.
         # Start the "work" process for each worker in a separate threat.
-
+        baseline = 0# 20/cap_fast*C_s/ 1000000
+        print(baseline)
         if(training):
             worker_threads = []
             temp_best_mean_solutions = np.zeros(len(workers))
@@ -615,7 +678,8 @@ def objective(parameters):
                 worker_work = lambda: worker.work(max_episode_length, gamma, sess, coord, saver, saver_best,Demand, LT_s,
                                                   LT_f, h, b, C_s, C_f,InvMax, InvMin, cap_fast, cap_slow,initial_state,
                                                   Penalty,Demand_Max,max_training_episodes,actions,p_len_episode_buffer,
-                                                  max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min, cut_10,warmup)
+                                                  max_no_improvement,pick_largest,verbose,entropy_decay,entropy_min,
+                                                  cut_10,warmup,distribution,baseline,k,u,m)
                 t = threading.Thread(target=(worker_work))
                 t.start()
                 sleep(0.5)
@@ -649,9 +713,19 @@ def objective(parameters):
 
         else:
 
-            states = [[4,2,2,2,2,2,2,0],[4,0,0,0,4,4,4,0],[4,4,4,4,0,0,0,0],[4,5,4,3,0,0,0,0],[4,0,0,0,3,4,5,0],
-                      [3, 2, 2, 2, 2, 2, 2, 0], [3, 0, 0, 0, 4, 4, 4, 0], [3, 4, 4, 4, 0, 0, 0, 0],
-                      [3, 5, 4, 3, 0, 0, 0, 0], [3, 0, 0, 0, 3, 4, 5, 0]]
+            #states = [[4,2,2,2,2,2,2,0],[4,0,0,0,4,4,4,0],[4,4,4,4,0,0,0,0],[4,5,4,3,0,0,0,0],[4,0,0,0,3,4,5,0],
+            #         [3, 2, 2, 2, 2, 2, 2, 0], [3, 0, 0, 0, 4, 4, 4, 0], [3, 4, 4, 4, 0, 0, 0, 0],
+            #         [3, 5, 4, 3, 0, 0, 0, 0], [3, 0, 0, 0, 3, 4, 5, 0],
+            #         [2, 2, 2, 2, 2, 2, 2, 0], [2, 0, 0, 0, 4, 4, 4, 0], [2, 4, 4, 4, 0, 0, 0, 0],
+            #         [2, 5, 4, 3, 0, 0, 0, 0], [2, 0, 0, 0, 3, 4, 5, 0],
+            #        [2, 1, 1, 1, 1, 1, 1, 0], [2, 0, 0, 0, 2, 2, 2, 0], [2, 2, 2, 2, 0, 0, 0, 0],
+            #        [2, 3, 3, 0, 0, 0, 0, 0], [2, 0, 0, 0, 0, 3, 3, 0]]
+#
+            states = [[4,2,2,2,0],[4,6,0,0,0],[4,0,0,6,0],
+                      [3, 2, 2, 2, 0], [3, 6, 0, 0, 0], [3, 0, 0, 6, 0],
+                      [2, 2, 2, 2, 0], [2, 6, 0, 0, 0], [2, 0, 0, 6, 0],
+                      [1, 2, 2, 2, 0], [1, 6, 0, 0, 0], [1, 0, 0, 6, 0]]
+
             policy_fast = []
             policy_slow = []
             for state in states:
@@ -760,8 +834,8 @@ def obj_bo(list):
     parameters['C_s'] = 100
     parameters['gamma'] = 0.99
     parameters['max_training_episodes'] = 10000000
-    parameters['invmax'] = 40  # (LT_s+1)*(2*Demand_Max+1)
-    parameters['invmin'] = -40 # -(LT_s+1)*(2*Demand_Max)
+    parameters['invmax'] = 200  # (LT_s+1)*(2*Demand_Max+1)
+    parameters['invmin'] = -200 # -(LT_s+1)*(2*Demand_Max)
     parameters['training'] = True
     parameters['high'] = False
     parameters['nbworkers'] = 4
@@ -771,6 +845,7 @@ def obj_bo(list):
     parameters['initial_state'] = [3]
     parameters['max_episode_length'] = 1000
     parameters['warmup'] = 20
+    parameters['distribution'] = 'normal'
     result = objective(parameters)
 
     return result
@@ -802,13 +877,13 @@ if __name__ == '__main__':
     parser.add_argument('--p_len_episode_buffer', default=20, type=float,
                         help="p_len_episode_buffer. Default = 20",
                         dest="p_len_episode_buffer")
-    parser.add_argument('--initial_state', default=[3], type=float,
+    parser.add_argument('--initial_state', default=[20], type=float,
                         help="initial_state. Default = [3,0]",
                         dest="initial_state")
-    parser.add_argument('--invmax', default=40, type=float,
+    parser.add_argument('--invmax', default=1000, type=float,
                         help="invmax. Default = 150",
                         dest="invmax")
-    parser.add_argument('--invmin', default=-40 , type=float,
+    parser.add_argument('--invmin', default=-200 , type=float,
                         help="invmin. Default = -15",
                         dest="invmin")
     parser.add_argument('--training', default= True, type=float,
@@ -836,7 +911,7 @@ if __name__ == '__main__':
                         help="OrderFast. Default = 5",
                         dest="OrderFast")
     parser.add_argument('--OrderSlow', default=4, type=int, help="OrderSlow. Default = 5", dest="OrderSlow")
-    parser.add_argument('--LT_s', default=7, type=int, help="LT_s. Default = 1", dest="LT_s")
+    parser.add_argument('--LT_s', default=2, type=int, help="LT_s. Default = 1", dest="LT_s")
     parser.add_argument('--LT_f', default=0, type=int, help="LT_f. Default = 0",
                         dest="LT_f")
     parser.add_argument('--cap_slow', default=1, type=float,
@@ -854,7 +929,7 @@ if __name__ == '__main__':
     parser.add_argument('--h', default=5, type=float,
                         help="h. Default = 5",
                         dest="h")
-    parser.add_argument('--b', default=95, type=int,
+    parser.add_argument('--b', default=495, type=int,
                         help="b. Default = 495",
                         dest="b")
     parser.add_argument('--penalty', default=1, type=str,
@@ -863,16 +938,33 @@ if __name__ == '__main__':
     parser.add_argument('--max_time', default=120, type=str,
                         help="max_time. Default = 120",
                         dest="max_time")
-    parser.add_argument('--max_episode_length', default=1000, type=str,
+    parser.add_argument('--max_episode_length', default=10000, type=str,
                         help="max_episode_length. Default = 100",
                         dest="max_episode_length")
-    parser.add_argument('--cut_10', default=2000, type=float,
+    parser.add_argument('--cut_10', default=200000, type=float,
                         help="cut_10. Default = 2000",
                         dest="cut_10")
-    parser.add_argument('--warmup', default=20, type=float,
+    parser.add_argument('--warmup', default=40, type=float,
                         help="warmup. Default = 20",
                         dest="warmup")
+    parser.add_argument('--distribution', default='normal', type=str,
+                        help="distribution. Default = normal",
+                        dest="distribution")
+    parser.add_argument('--k', default=0, type=int,
+                        help="k. Default = normal",
+                        dest="k")
+    parser.add_argument('--u', default=105, type=int,
+                        help="u. Default = normal",
+                        dest="u")
+    parser.add_argument('--m', default=1, type=float,
+                        help="m. Default = normal",
+                        dest="m")
+
     args = parser.parse_args()
+
+    args.C_f = args.u
+
+
     parameters = vars(args)
 
     #for LT_s in [args.LT_s]:
@@ -881,4 +973,34 @@ if __name__ == '__main__':
     #            args.LT_s = LT_s
     #            args.b = b
     #            args.C_f = C_f
-    objective(parameters)
+
+
+   # for C_f in [120]:
+   #     for k in [0,1,2,3]:
+   #         for m in [1.05]:
+   #             args.k = k
+   #             args.m = m
+   #             args.u = C_f
+   #             args.C_f = C_f
+    args.LT_s = 14
+    args.C_f = 105
+    args.u = 105
+    args.OrderFast = 20
+    args.OrderSlow = 35
+    args.InvMax = 200
+    args.InvMin = -40
+    args.p_len_episode_buffer = 50
+    while(True):
+        objective(parameters)
+     #          with open('Results_combinedSF.csv', newline='') as csvfile:
+     #              csvreader = csv.reader(csvfile, delimiter=';', quotechar='|')
+     #              for row in csvreader:
+     #                  if (args.LT_s == int(row[1]) and args.C_f == int(row[2]) and args.b == int(row[3]) and args.cap_slow == int(
+     #                          row[4]) and args.k == int(row[7])):
+     #                      best_median = float(row[6])
+
+
+     #          best_found = 999999999
+     #          while best_found > 1.02*best_median:
+     #              print(parameters)
+     #              best_found = objective(parameters)
