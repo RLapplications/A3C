@@ -259,7 +259,7 @@ class Worker():
         #    best_median = 999999999999
 #
         try:
-            with open('Results_combinedNormal20-4.csv', newline='') as csvfile:
+            with open('Results_combined.csv', newline='') as csvfile:
                 csvreader = csv.reader(csvfile,delimiter=';', quotechar='|')
                 for row in csvreader:
                     if(LT_s == int(row[1]) and C_f == int(row[2]) and b == int(row[3]) and cap_slow == int(row[4])):# and k == int(row[7])):
@@ -628,7 +628,7 @@ def objective(parameters):
         load_model = False
     else:
         load_model=True
-    load_model = True
+    #load_model = True
     model_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/model'
     best_path = 'Logs/Logs_' + str(time.strftime("%Y%m%d-%H%M%S")) + '/best'
     log_path = 'Logs/'
@@ -877,7 +877,7 @@ if __name__ == '__main__':
     parser.add_argument('--p_len_episode_buffer', default=20, type=float,
                         help="p_len_episode_buffer. Default = 20",
                         dest="p_len_episode_buffer")
-    parser.add_argument('--initial_state', default=[20], type=float,
+    parser.add_argument('--initial_state', default=[4], type=float,
                         help="initial_state. Default = [3,0]",
                         dest="initial_state")
     parser.add_argument('--invmax', default=1000, type=float,
@@ -938,7 +938,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_time', default=120, type=str,
                         help="max_time. Default = 120",
                         dest="max_time")
-    parser.add_argument('--max_episode_length', default=10000, type=str,
+    parser.add_argument('--max_episode_length', default=1000, type=str,
                         help="max_episode_length. Default = 100",
                         dest="max_episode_length")
     parser.add_argument('--cut_10', default=200000, type=float,
@@ -947,7 +947,7 @@ if __name__ == '__main__':
     parser.add_argument('--warmup', default=40, type=float,
                         help="warmup. Default = 20",
                         dest="warmup")
-    parser.add_argument('--distribution', default='normal', type=str,
+    parser.add_argument('--distribution', default='uniform', type=str,
                         help="distribution. Default = normal",
                         dest="distribution")
     parser.add_argument('--k', default=0, type=int,
@@ -966,15 +966,19 @@ if __name__ == '__main__':
 
 
     parameters = vars(args)
-
+    args.Demand_Max = 4
     args.LT_s = 14
     args.C_f = 105
+    args.k = 1
     args.u = 105
-    args.OrderFast = 35
-    args.OrderSlow = 35
-    args.InvMax = 200
+    args.m = 1
+    args.OrderFast = 4
+    args.OrderSlow = 4
+    args.InvMax = 40
     args.InvMin = -40
-    args.p_len_episode_buffer = 50
+    args.high = False
+    #args.p_len_episode_buffer = 200
+    #args.entropy = 0
     parameters = vars(args)
     while(True):
         objective(parameters)
